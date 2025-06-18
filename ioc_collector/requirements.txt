@@ -1,3 +1,5 @@
 python-dotenv
 requests
 rich
+python-json-logger
+tqdm
