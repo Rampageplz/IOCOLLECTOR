@@ -18,6 +18,7 @@ The initial sprint added a reporting module with several options.
 - Friendly message when no data is found.
 - `Report` dataclass for consistent output.
 - README examples for generating reports.
+- Documentation covers the `--value` and `--sort` options.
 
 ### Pending
  - Dashboard/API integrations and alert notifications.
@@ -30,6 +31,5 @@ The initial sprint added a reporting module with several options.
 ### Next steps
 - Add asynchronous collectors for performance.
 - Provide dashboard visualization for reports.
-- Improve documentation about the new `--value` and `--sort` options.
 
 To update these instructions send a pull request editing this file.
