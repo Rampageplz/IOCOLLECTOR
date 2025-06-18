@@ -102,8 +102,32 @@ Para resumir os IOCs coletados em um determinado dia e verificar valores
 repetidos entre os feeds, utilize o módulo `ioc_collector.report`:
 
 ```bash
-python -m ioc_collector.report --date AAAA-MM-DD --output relatorio.json
+python -m ioc_collector.report --date AAAA-MM-DD --output-json relatorio.json
 ```
 
-O arquivo gerado contém estatísticas por fonte e tipo de IOC, além dos
-indicadores que apareceram em mais de um coletor.
+Também é possível gerar arquivos em CSV, TXT, Excel ou PDF:
+
+```bash
+python -m ioc_collector.report --date AAAA-MM-DD --output-csv relatorio.csv \
+    --output-txt relatorio.txt \
+    --output-xlsx relatorio.xlsx \
+    --output-pdf relatorio.pdf
+```
+
+Para visualizar apenas IOCs duplicados utilize:
+
+```bash
+python -m ioc_collector.report --date AAAA-MM-DD --only-duplicates
+```
+
+Ou apenas o ranking de recorrências:
+
+```bash
+python -m ioc_collector.report --date AAAA-MM-DD --only-top
+```
+
+Use os filtros `--type` e `--source` para limitar a consulta e `--top-count` para
+definir quantos IOCs devem aparecer na seção "Top". Utilize `--only-duplicates`
+para exibir apenas IOCs presentes em múltiplos feeds ou `--only-top` para listar
+somente os valores recorrentes. Caso não haja registros para a data informada
+será exibido `⚠️ Nenhum IOC encontrado para a data X`.
