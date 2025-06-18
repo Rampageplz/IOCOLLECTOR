@@ -32,22 +32,24 @@ Este projeto realiza a coleta diária de indicadores de comprometimento (IOCs) d
    necessárias:
 
    ```bash
-   ABUSEIPDB_API_KEY=SUACHAVE
-   OTX_API_KEY=CHAVE_OTX  # opcional
-   ```
+ ABUSEIPDB_API_KEY=SUACHAVE
+  OTX_API_KEY=CHAVE_OTX  # opcional
+  ```
 
    Defina também `ACTIVE_COLLECTORS` caso queira habilitar ou desabilitar feeds.
+   Para testes offline do AbuseIPDB defina `ABUSE_MOCK_FILE` apontando para um
+   arquivo JSON contendo os dados simulados do feed (ex.: `data/mock/abuse_sample.json`).
 
 4. Execute o coletor:
 
    ```bash
-   python ioc_collector/main.py
+   python -m ioc_collector.main
    ```
 
 5. Para exibir os IPs mais reportados em determinada data:
 
    ```bash
-   python ioc_collector/main.py --top AAAA-MM-DD
+   python -m ioc_collector.main --top AAAA-MM-DD
    ```
 
 ### Configuração
@@ -64,6 +66,7 @@ O arquivo `config.json` define parâmetros dos coletores. Exemplo:
 ```
 
 `CONFIDENCE_MINIMUM`, `LIMIT_DETAILS` e `MAX_AGE_IN_DAYS` são usados pelo coletor do AbuseIPDB. `ACTIVE_COLLECTORS` define quais feeds estarão habilitados (separados por vírgula).
+Para testes locais sem acessar a API, informe `ABUSE_MOCK_FILE` apontando para um JSON com o retorno esperado.
 
 ## Debug
 

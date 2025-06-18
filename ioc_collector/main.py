@@ -8,16 +8,20 @@ from pathlib import Path
 from rich.logging import RichHandler
 from pythonjsonlogger import jsonlogger
 
-from collectors.collector_abuse import collect_abuse
-from collectors.collector_otx import collect_otx
-from collectors.collector_urlhaus import collect_urlhaus
-from utils.utils import (
+from ioc_collector.collectors.collector_abuse import collect_abuse
+from ioc_collector.collectors.collector_otx import collect_otx
+from ioc_collector.collectors.collector_urlhaus import collect_urlhaus
+from ioc_collector.utils.utils import (
     generate_requirements,
     load_api_keys,
     load_config,
     save_daily_iocs,
 )
-from alerts_manager import update_alerts, check_duplicates, print_top_reported
+from ioc_collector.alerts_manager import (
+    update_alerts,
+    check_duplicates,
+    print_top_reported,
+)
 
 
 LOG_DIR = Path(__file__).resolve().parent.parent / "logs"

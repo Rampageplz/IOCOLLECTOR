@@ -1,7 +1,10 @@
 """Coletores de dados da API AbuseIPDB."""
 
+import json
 import logging
+import os
 import time
+from pathlib import Path
 from typing import Any, Dict
 
 import requests
@@ -88,7 +91,24 @@ def fetch_ip_details(api_key: str, blacklist, config: Dict[str, Any]):
 
 
 def collect_abuse(api_key: str, config: Dict[str, Any]):
-    """Return transformed IOCs from AbuseIPDB."""
+    """Return transformed IOCs from AbuseIPDB.
+
+    If the environment variable ``ABUSE_MOCK_FILE`` is set, data will be loaded
+    from the specified JSON file instead of calling the API. This helps during
+    testing when the AbuseIPDB rate limit is exceeded.
+    """
+
+    mock_path = os.getenv("ABUSE_MOCK_FILE")
+    if mock_path:
+        path = Path(mock_path)
+        if path.exists():
+            with path.open("r", encoding="utf-8") as fh:
+                details = json.load(fh)
+            logging.info("Usando dados simulados do AbuseIPDB (%s entradas)", len(details))
+            from ..utils.utils import transform_abuse_data
+            return transform_abuse_data(details)
+        logging.warning("Arquivo ABUSE_MOCK_FILE %s não encontrado", mock_path)
+
     try:
         blacklist = fetch_blacklist(api_key, config)
     except RuntimeError as exc:

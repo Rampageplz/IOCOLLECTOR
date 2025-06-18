@@ -1,0 +1,28 @@
+[
+  {
+    "check": {
+      "ipAddress": "1.1.1.1",
+      "abuseConfidenceScore": 90,
+      "totalReports": 10,
+      "countryCode": "US",
+      "lastReportedAt": "2025-06-17T12:00:00Z"
+    },
+    "reports": [
+      {
+        "reporterId": 1,
+        "comment": "Malicious activity",
+        "reportedAt": "2025-06-17T10:00:00Z"
+      }
+    ]
+  },
+  {
+    "check": {
+      "ipAddress": "2.2.2.2",
+      "abuseConfidenceScore": 85,
+      "totalReports": 5,
+      "countryCode": "BR",
+      "lastReportedAt": "2025-06-15T14:00:00Z"
+    },
+    "reports": []
+  }
+]
