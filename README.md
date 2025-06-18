@@ -28,22 +28,20 @@ Este projeto realiza a coleta diária de indicadores de comprometimento (IOCs) d
    pip install -r ioc_collector/requirements.txt
    ```
 
-3. Crie um arquivo `.env` dentro da pasta `ioc_collector/` com as chaves de API
-   necessárias (ou informe-as quando o programa solicitar). Na primeira execução
-   será exibido um banner "Inteltool" perguntando se deseja cadastrar ou alterar
-   as chaves das APIs. Se deixar em branco, a chave padrão do OTX será usada e o
-   AbuseIPDB funcionará em modo mock.
+3. Defina as API keys no arquivo `config.json` na seção `API_KEYS` ou nas
+   variáveis de ambiente correspondentes (`ABUSEIPDB_API_KEY`, `OTX_API_KEY`,
+   `URLHAUS_API_KEY`). Caso o `config.json` não exista ele será criado com um
+   template básico na primeira execução.
 
    ```bash
  ABUSEIPDB_API_KEY=SUACHAVE
   OTX_API_KEY=CHAVE_OTX  # opcional
   ```
 
-   Defina também `ACTIVE_COLLECTORS` caso queira habilitar ou desabilitar feeds.
-   Para testes offline do AbuseIPDB defina `ABUSE_MOCK_FILE` apontando para um
-   arquivo JSON contendo os dados simulados do feed (ex.: `data/mock/abuse_sample.json`).
-   Se `ABUSE_MOCK_FILE` estiver definido não é exigida `ABUSEIPDB_API_KEY`.
-   Quando `ABUSE_MOCK_FILE` estiver presente não é necessário informar `ABUSEIPDB_API_KEY`.
+   Defina também `ACTIVE_COLLECTORS` se quiser habilitar ou desabilitar feeds.
+   Para testes offline do AbuseIPDB utilize `ABUSE_MOCK_FILE` com um JSON de
+   amostra (ex.: `data/mock/abuse_sample.json`). Quando esse arquivo é definido
+   a chave do AbuseIPDB torna-se opcional.
 
 ### Testes com API real ou mock
 
@@ -80,13 +78,18 @@ O arquivo `config.json` define parâmetros dos coletores. Exemplo:
 {
   "CONFIDENCE_MINIMUM": 80,
   "LIMIT_DETAILS": 100,
- "MAX_AGE_IN_DAYS": 1,
+  "MAX_AGE_IN_DAYS": 1,
   "ACTIVE_COLLECTORS": "abuseipdb,otx,urlhaus",
-  "GENERATE_REQUIREMENTS": true
+  "GENERATE_REQUIREMENTS": true,
+  "API_KEYS": {
+    "ABUSEIPDB": "",
+    "OTX": "",
+    "URLHAUS": ""
+  }
 }
 ```
 
-`CONFIDENCE_MINIMUM`, `LIMIT_DETAILS` e `MAX_AGE_IN_DAYS` são usados pelo coletor do AbuseIPDB. `ACTIVE_COLLECTORS` define quais feeds estarão habilitados (separados por vírgula). `GENERATE_REQUIREMENTS` controla a criação automática do `requirements.txt`.
+`CONFIDENCE_MINIMUM`, `LIMIT_DETAILS` e `MAX_AGE_IN_DAYS` são usados pelo coletor do AbuseIPDB. `ACTIVE_COLLECTORS` define quais feeds estarão habilitados (separados por vírgula). `API_KEYS` centraliza todas as chaves necessárias para os coletores. `GENERATE_REQUIREMENTS` controla a criação automática do `requirements.txt`.
 Para testes locais sem acessar a API, informe `ABUSE_MOCK_FILE` apontando para um JSON com o retorno esperado.
 
 ## Debug

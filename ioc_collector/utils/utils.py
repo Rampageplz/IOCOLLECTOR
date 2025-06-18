@@ -11,6 +11,16 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 
+def encrypt_key(key: str) -> str:
+    """Placeholder to encrypt a key for future use."""
+    return key
+
+
+def decrypt_key(key: str) -> str:
+    """Placeholder to decrypt a key for future use."""
+    return key
+
+
 def generate_requirements(path: Path) -> None:
     """Generate a requirements file using pip freeze."""
     try:
@@ -23,30 +33,17 @@ def generate_requirements(path: Path) -> None:
 
 
 def load_api_keys() -> dict:
-    """Load API keys for all collectors from a .env file or prompt the user."""
-    env_path = Path(__file__).resolve().parents[1] / ".env"
-    load_dotenv(dotenv_path=env_path)
-
-    keys = {
-        "ABUSEIPDB_API_KEY": os.getenv("ABUSEIPDB_API_KEY"),
-        "OTX_API_KEY": os.getenv("OTX_API_KEY"),
-        "URLHAUS_API_KEY": os.getenv("URLHAUS_API_KEY"),
-    }
-
-    mock = os.getenv("ABUSE_MOCK_FILE")
-    if not keys["ABUSEIPDB_API_KEY"] and not mock:
-        raise RuntimeError("Chave ABUSEIPDB_API_KEY não encontrada e ABUSE_MOCK_FILE não definido")
-
-    if not (keys.get("OTX_API_KEY") and keys.get("URLHAUS_API_KEY")) and not os.getenv("NO_PROMPT"):
-        from .prompt import prompt_api_keys
-
-        keys.update(prompt_api_keys(keys))
-
-    return keys
+    """Return API keys loaded via :func:`load_config` (deprecated)."""
+    config = load_config()
+    return config.get("API_KEYS", {})
 
 
 def load_config() -> dict:
-    """Load configuration values from config.json if present."""
+    """Load configuration and API keys from ``config.json``.
+
+    If the file does not exist it is created with a default template. Values in
+    environment variables override missing keys.
+    """
     config_path = Path(__file__).resolve().parents[2] / "config.json"
     if config_path.exists():
         try:
@@ -56,10 +53,31 @@ def load_config() -> dict:
             logging.exception("Erro ao carregar config.json")
             data = {}
     else:
-        data = {}
+        data = {
+            "CONFIDENCE_MINIMUM": 80,
+            "LIMIT_DETAILS": 100,
+            "MAX_AGE_IN_DAYS": 1,
+            "ACTIVE_COLLECTORS": "abuseipdb,otx,urlhaus",
+            "GENERATE_REQUIREMENTS": True,
+            "API_KEYS": {"ABUSEIPDB": "", "OTX": "", "URLHAUS": ""},
+        }
+        config_path.write_text(json.dumps(data, indent=2))
+        logging.warning("Arquivo config.json n\u00e3o encontrado. Template criado em %s", config_path)
 
     active = os.getenv("ACTIVE_COLLECTORS", data.get("ACTIVE_COLLECTORS", "abuseipdb"))
     active_list = [name.strip() for name in active.split(',') if name.strip()]
+
+    keys = data.get("API_KEYS", {})
+    env_keys = {
+        "ABUSEIPDB": os.getenv("ABUSEIPDB_API_KEY"),
+        "OTX": os.getenv("OTX_API_KEY"),
+        "URLHAUS": os.getenv("URLHAUS_API_KEY"),
+    }
+    for k, env_val in env_keys.items():
+        if not keys.get(k) and env_val:
+            keys[k] = env_val
+        if keys.get(k):
+            keys[k] = decrypt_key(keys[k])
 
     return {
         "CONFIDENCE_MINIMUM": data.get("CONFIDENCE_MINIMUM", 80),
@@ -67,6 +85,7 @@ def load_config() -> dict:
         "MAX_AGE_IN_DAYS": data.get("MAX_AGE_IN_DAYS", 1),
         "ACTIVE_COLLECTORS": active_list,
         "GENERATE_REQUIREMENTS": data.get("GENERATE_REQUIREMENTS", True),
+        "API_KEYS": keys,
     }
 
 
