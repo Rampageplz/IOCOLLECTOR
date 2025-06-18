@@ -14,6 +14,7 @@ from typing import Dict, Iterable, List, Optional
 
 from fpdf import FPDF
 from openpyxl import Workbook
+from openpyxl.utils import get_column_letter
 
 from rich.console import Console
 from rich.table import Table
@@ -36,6 +37,7 @@ def _filter_alerts(
     date: Optional[str] = None,
     ioc_type: Optional[str] = None,
     source: Optional[str] = None,
+    value: Optional[str] = None,
 ) -> List[Dict[str, any]]:
     result = []
     for a in alerts:
@@ -44,6 +46,8 @@ def _filter_alerts(
         if ioc_type and a.get("ioc_type") != ioc_type:
             continue
         if source and a.get("source") != source:
+            continue
+        if value and a.get("ioc_value") != value:
             continue
         result.append(a)
     return result
@@ -54,14 +58,19 @@ def generate_report(
     *,
     ioc_type: Optional[str] = None,
     source: Optional[str] = None,
+    value: Optional[str] = None,
     top_count: int = 10,
     all_history: bool = False,
+    sort: bool = False,
 ) -> Report:
     alerts = _load_alerts()
     if all_history:
-        daily = _filter_alerts(alerts, ioc_type=ioc_type, source=source)
+        daily = _filter_alerts(alerts, ioc_type=ioc_type, source=source, value=value)
     else:
-        daily = _filter_alerts(alerts, date=date, ioc_type=ioc_type, source=source)
+        daily = _filter_alerts(alerts, date=date, ioc_type=ioc_type, source=source, value=value)
+
+    if sort:
+        daily.sort(key=lambda x: x.get("lastReportedAt") or x.get("date"))
 
     if not daily:
         raise ValueError(f"Nenhum IOC encontrado para a data {date}")
@@ -188,6 +197,9 @@ def _save_xlsx(report: Report, path: Path) -> None:
     else:
         header = sorted({k for item in report.iocs for k in item.keys()})
     ws_iocs.append(header)
+    ws_iocs.freeze_panes = "A2"
+    last_col = get_column_letter(len(header)) if header else "A"
+    ws_iocs.auto_filter.ref = f"A1:{last_col}1"
     for item in report.iocs:
         row = []
         for h in header:
@@ -196,6 +208,9 @@ def _save_xlsx(report: Report, path: Path) -> None:
                 val = ", ".join(str(v) for v in val)
             row.append(val)
         ws_iocs.append(row)
+
+    for col in ws_iocs.columns:
+        ws_iocs.column_dimensions[col[0].column_letter].width = 20
 
     wb.save(path)
     logging.info("✅ XLSX salvo em %s", path.resolve())
@@ -260,8 +275,10 @@ def main() -> None:
     parser.add_argument("--output-pdf", help="Salvar relatório em PDF")
     parser.add_argument("--type", dest="ioc_type", help="Filtrar por tipo de IOC")
     parser.add_argument("--source", help="Filtrar por feed específico")
+    parser.add_argument("--value", help="Filtrar por IOC específico")
     parser.add_argument("--top-count", type=int, default=10)
     parser.add_argument("--all", action="store_true", help="Usar todo o histórico")
+    parser.add_argument("--sort", action="store_true", help="Ordenar por data/hora")
     parser.add_argument("--only-duplicates", action="store_true", help="Mostrar apenas duplicados")
     parser.add_argument("--only-top", action="store_true", help="Mostrar apenas a seção Top")
     args = parser.parse_args()
@@ -271,8 +288,10 @@ def main() -> None:
             args.date,
             ioc_type=args.ioc_type,
             source=args.source,
+            value=args.value,
             top_count=args.top_count,
             all_history=args.all,
+            sort=args.sort,
         )
     except ValueError as exc:
         Console().print(f"[yellow]⚠️ {exc}[/yellow]")

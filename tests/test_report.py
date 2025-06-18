@@ -5,7 +5,7 @@ from ioc_collector.report import generate_report, _save_csv, _save_txt, _save_js
 
 
 def test_generate_and_save_report(tmp_path):
-    report = generate_report("2025-06-18", top_count=5)
+    report = generate_report("2025-06-18", top_count=5, value="1.1.1.1", sort=True)
     csv_path = tmp_path / "out.csv"
     txt_path = tmp_path / "out.txt"
     json_path = tmp_path / "out.json"

@@ -126,8 +126,8 @@ Ou apenas o ranking de recorrências:
 python -m ioc_collector.report --date AAAA-MM-DD --only-top
 ```
 
-Use os filtros `--type` e `--source` para limitar a consulta e `--top-count` para
-definir quantos IOCs devem aparecer na seção "Top". Utilize `--only-duplicates`
-para exibir apenas IOCs presentes em múltiplos feeds ou `--only-top` para listar
-somente os valores recorrentes. Caso não haja registros para a data informada
-será exibido `⚠️ Nenhum IOC encontrado para a data X`.
+Use os filtros `--type`, `--source` e `--value` para limitar a consulta. O
+parâmetro `--top-count` define quantos IOCs devem aparecer na seção "Top". Utilize
+`--sort` para ordenar a lista completa por data/hora. Os flags `--only-duplicates`
+e `--only-top` controlam quais seções são exibidas. Caso não haja registros para a
+data informada será exibido `⚠️ Nenhum IOC encontrado para a data X`.
