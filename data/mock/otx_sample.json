@@ -5,7 +5,7 @@
       "name": "Test Pulse",
       "tags": ["malware"],
       "indicators": [
-        {"type": "domain", "indicator": "malicious.com", "description": "Bad domain"}
+        {"type": "domain", "indicator": "malicious.com", "description": "Bad domain", "created": "2025-06-17T11:00:00Z"}
       ]
     }
   ]

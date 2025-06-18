@@ -24,13 +24,22 @@ def collect_urlhaus() -> List[IOC]:
 
     data = resp.json()
     entries = data.get("urls", [])
-    timestamp = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
-    today = timestamp.split("T")[0]
+    now = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
     iocs: List[IOC] = []
     for item in entries:
+        raw_date = item.get("date_added")
+        if raw_date:
+            try:
+                parsed = datetime.datetime.strptime(raw_date, "%Y-%m-%d %H:%M:%S %Z")
+                timestamp = parsed.strftime("%Y-%m-%dT%H:%M:%SZ")
+            except ValueError:
+                timestamp = now
+        else:
+            timestamp = now
+        date = timestamp.split("T")[0]
         iocs.append(
             IOC(
-                date=today,
+                date=date,
                 time=timestamp,
                 source="URLHaus",
                 ioc_type="URL",

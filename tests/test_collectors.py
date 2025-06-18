@@ -28,6 +28,7 @@ def test_collect_abuse_mock(monkeypatch):
     iocs = collect_abuse(None, config)
     assert iocs
     assert iocs[0].source == "AbuseIPDB"
+    assert iocs[0].time == "2025-06-17T12:00:00Z"
     os.environ.pop("ABUSE_MOCK_FILE")
 
 
@@ -37,6 +38,7 @@ def test_collect_otx_mock(monkeypatch):
     iocs = collect_otx("dummy")
     assert iocs
     assert iocs[0].source == "OTX"
+    assert iocs[0].time == "2025-06-17T11:00:00Z"
 
 
 def test_collect_urlhaus_mock(monkeypatch):
@@ -45,3 +47,4 @@ def test_collect_urlhaus_mock(monkeypatch):
     iocs = collect_urlhaus()
     assert iocs
     assert iocs[0].source == "URLHaus"
+    assert iocs[0].time == "2025-06-18T09:00:00Z"

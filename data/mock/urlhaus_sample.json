@@ -6,7 +6,8 @@
       "tags": ["tag"],
       "url_status": "online",
       "urlhaus_reference": "https://urlhaus.abuse.ch/url/12345/",
-      "host": "evil.com"
+      "host": "evil.com",
+      "date_added": "2025-06-18 09:00:00 UTC"
     }
   ]
 }

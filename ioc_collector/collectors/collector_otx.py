@@ -23,15 +23,17 @@ def collect_otx(api_key: str) -> List[IOC]:
         return []
 
     pulses = resp.json().get("results", [])
-    timestamp = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
-    today = timestamp.split("T")[0]
+    now = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
     iocs: List[IOC] = []
     for pulse in pulses:
         tags = pulse.get("tags", [])
+        pulse_time = pulse.get("created") or pulse.get("modified") or now
         for ind in pulse.get("indicators", []):
+            timestamp = ind.get("created") or ind.get("timestamp") or pulse_time
+            date = timestamp.split("T")[0]
             iocs.append(
                 IOC(
-                    date=today,
+                    date=date,
                     time=timestamp,
                     source="OTX",
                     ioc_type=ind.get("type"),

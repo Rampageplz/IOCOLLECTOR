@@ -101,9 +101,8 @@ def save_daily_iocs(iocs, folder: Path) -> Path:
 
 
 def transform_abuse_data(details):
-    """Convert AbuseIPDB check and report data into IOC objects."""
-    timestamp = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
-    today = timestamp.split("T")[0]
+    """Convert AbuseIPDB check and report data into IOC objects using report timestamps."""
+    now = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
     iocs = []
     for item in details:
         check = item.get("check", {})
@@ -115,10 +114,12 @@ def transform_abuse_data(details):
         total = check.get("totalReports")
         country = check.get("countryCode")
         last = check.get("lastReportedAt")
+        timestamp = last or now
+        date = timestamp.split("T")[0]
 
         iocs.append(
             IOC(
-                date=today,
+                date=date,
                 time=timestamp,
                 source="AbuseIPDB",
                 ioc_type="IP",
