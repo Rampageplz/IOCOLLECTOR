@@ -1,25 +1,46 @@
-# TestAPI
+# IOC Collector
 
-Este repositório contém o script `ioc_collector/app.py` que coleta IPs
-da blacklist do AbuseIPDB e consulta detalhes adicionais em outros
-endpoints da API (check e reports). A cada execução são buscados os
-relatórios recentes dos IPs coletados para maximizar a correlação de
-dados de ameaças.
+Este projeto realiza a coleta diaria de indicadores de comprometimento (IOCs) a partir da API do [AbuseIPDB](https://www.abuseipdb.com/). A estrutura foi modularizada para facilitar a manutencao e expansao.
 
-Ao executar o script, ele obtém os IPs reportados nas últimas 24 horas com
-`abuseConfidenceScore` maior ou igual a 80, consulta os endpoints `check`
-e `reports` para cada IP e em seguida salva os indicadores em arquivos
-JSON consolidados em `alerts.json`. No final da execução são exibidos os
-IPs mais reportados no próprio dia.
+## Estrutura
 
-Execute a coleta com:
+- `ioc_collector/collectors/collector_abuse.py` - funcoes para interagir com a API do AbuseIPDB
+- `ioc_collector/alerts_manager.py` - gerencia o arquivo `alerts.json`
+- `ioc_collector/utils/utils.py` - utilidades diversas
+- `ioc_collector/main.py` - ponto de entrada da aplicacao
+- `data/abuseipdb/` - arquivos diarios de IOCs
+- `logs/` - arquivos de log no formato `YYYY-MM-DD.log`
 
-```bash
-python ioc_collector/app.py
-```
+## Uso
 
-Para ver os IPs mais reportados de uma data específica, utilize:
+1. Crie e ative um ambiente virtual (opcional, mas recomendado):
 
-```bash
-python ioc_collector/app.py --top AAAA-MM-DD
-```
+   ```bash
+   python -m venv venv
+   source venv/bin/activate
+   ```
+
+2. Instale as dependências:
+
+   ```bash
+   pip install -r ioc_collector/requirements.txt
+   ```
+
+3. Crie um arquivo `.env` dentro da pasta `ioc_collector/` contendo a variável
+   `ABUSEIPDB_API_KEY` com sua chave da API.
+
+4. Execute o coletor:
+
+   ```bash
+   python ioc_collector/main.py
+   ```
+
+5. Para exibir os IPs mais reportados em determinada data:
+
+   ```bash
+   python ioc_collector/main.py --top AAAA-MM-DD
+   ```
+
+## Debug
+
+Os logs sao gravados em `logs/` e tambem exibidos coloridos no terminal utilizando `rich`. Para aumentar a verbosidade, altere o nivel em `setup_logging()` para `DEBUG`.
