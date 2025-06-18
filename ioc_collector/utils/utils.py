@@ -24,7 +24,12 @@ def generate_requirements(path: Path) -> None:
 
 def load_api_key() -> str:
     """Load the AbuseIPDB API key from a .env file."""
-    load_dotenv(dotenv_path=Path(__file__).resolve().with_name(".env"))
+    # The README instructs placing the .env file at the package root
+    # (ioc_collector/.env). Previously this function tried to load the
+    # file from the utils module directory. Use parents[1] to follow the
+    # documented location instead.
+    env_path = Path(__file__).resolve().parents[1] / ".env"
+    load_dotenv(dotenv_path=env_path)
     key = os.getenv("ABUSEIPDB_API_KEY")
     if not key:
         raise RuntimeError("Chave de API não encontrada no arquivo .env")
