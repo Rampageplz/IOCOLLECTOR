@@ -95,3 +95,15 @@ Para testes locais sem acessar a API, informe `ABUSE_MOCK_FILE` apontando para u
 ## Debug
 
 Os logs sao gravados em `logs/` e tambem exibidos coloridos no terminal utilizando `rich`. Para aumentar a verbosidade, altere o nivel em `setup_logging()` para `DEBUG`.
+
+## Relatórios e correlação
+
+Para resumir os IOCs coletados em um determinado dia e verificar valores
+repetidos entre os feeds, utilize o módulo `ioc_collector.report`:
+
+```bash
+python -m ioc_collector.report --date AAAA-MM-DD --output relatorio.json
+```
+
+O arquivo gerado contém estatísticas por fonte e tipo de IOC, além dos
+indicadores que apareceram em mais de um coletor.
