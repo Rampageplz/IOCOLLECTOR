@@ -6,9 +6,16 @@ import logging
 from pathlib import Path
 
 from rich.logging import RichHandler
+from pythonjsonlogger import jsonlogger
 
 from collectors.collector_abuse import fetch_blacklist, fetch_ip_details
-from utils.utils import generate_requirements, load_api_key, save_daily_iocs, transform_data
+from utils.utils import (
+    generate_requirements,
+    load_api_key,
+    load_config,
+    save_daily_iocs,
+    transform_data,
+)
 from alerts_manager import update_alerts, check_duplicates, print_top_reported
 
 
@@ -18,24 +25,38 @@ ALERTS_FILE = Path(__file__).resolve().parent / "alerts.json"
 
 
 def setup_logging() -> None:
-    """Configure file and console logging with RichHandler."""
+    """Configure file and console logging with RichHandler and JSON file."""
     LOG_DIR.mkdir(parents=True, exist_ok=True)
     log_path = LOG_DIR / f"{datetime.date.today().strftime('%Y-%m-%d')}.log"
+    json_log_path = LOG_DIR / f"{datetime.date.today().strftime('%Y-%m-%d')}.json"
+
+    file_handler = logging.FileHandler(log_path, encoding="utf-8")
+    file_handler.setFormatter(
+        logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+    )
+
+    json_handler = logging.FileHandler(json_log_path, encoding="utf-8")
+    json_handler.setFormatter(jsonlogger.JsonFormatter())
+
+    console_handler = RichHandler(rich_tracebacks=True)
+
     logging.basicConfig(
         level=logging.INFO,
-        format="%(asctime)s - %(levelname)s - %(message)s",
-        handlers=[
-            logging.FileHandler(log_path, encoding="utf-8"),
-            RichHandler(rich_tracebacks=True),
-        ],
+        handlers=[file_handler, json_handler, console_handler],
     )
 
 
-def collect(api_key: str) -> None:
+def collect(api_key: str, config: dict) -> None:
     """Perform the entire IOC collection workflow."""
     logging.info("In\u00edcio da coleta")
+
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    today_file = DATA_DIR / f"{datetime.date.today().strftime('%Y-%m-%d')}.json"
+    if today_file.exists():
+        logging.info("A coleta j\u00e1 foi feita hoje")
+        return
     try:
-        blacklist = fetch_blacklist(api_key)
+        blacklist = fetch_blacklist(api_key, config)
     except RuntimeError as exc:
         logging.error(exc)
         return
@@ -50,7 +71,7 @@ def collect(api_key: str) -> None:
     else:
         logging.info("Nenhum IP reportado nas últimas 24h com score >= 80.")
 
-    details = fetch_ip_details(api_key, blacklist, limit=20)
+    details = fetch_ip_details(api_key, blacklist, config)
     logging.debug("Detalhes retornados: %s", details)
     processed = transform_data(details)
     logging.info("IOCs coletados: %s", len(processed))
@@ -87,6 +108,7 @@ def main() -> None:
 
     try:
         api_key = load_api_key()
+        config = load_config()
     except RuntimeError as exc:
         logging.error(exc)
         return
@@ -95,7 +117,7 @@ def main() -> None:
         print_top_reported(args.top, ALERTS_FILE)
         return
 
-    collect(api_key)
+    collect(api_key, config)
 
 
 if __name__ == "__main__":

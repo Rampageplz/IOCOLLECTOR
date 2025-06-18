@@ -31,6 +31,26 @@ def load_api_key() -> str:
     return key
 
 
+def load_config() -> dict:
+    """Load configuration values from config.json if present."""
+    config_path = Path(__file__).resolve().parents[1] / "config.json"
+    if config_path.exists():
+        try:
+            with config_path.open("r", encoding="utf-8") as fh:
+                data = json.load(fh)
+        except Exception as exc:
+            logging.error("Erro ao carregar config.json: %s", exc)
+            data = {}
+    else:
+        data = {}
+
+    return {
+        "CONFIDENCE_MINIMUM": data.get("CONFIDENCE_MINIMUM", 80),
+        "LIMIT_DETAILS": data.get("LIMIT_DETAILS", 100),
+        "MAX_AGE_IN_DAYS": data.get("MAX_AGE_IN_DAYS", 1),
+    }
+
+
 def save_daily_iocs(iocs, folder: Path) -> Path:
     """Save the IOCs to a daily JSON file under the provided folder."""
     folder.mkdir(parents=True, exist_ok=True)

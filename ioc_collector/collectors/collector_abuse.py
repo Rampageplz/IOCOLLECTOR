@@ -1,73 +1,85 @@
 """Coletores de dados da API AbuseIPDB."""
 
 import logging
+import time
+from typing import Any, Dict
+
 import requests
+from requests import Response
+from tqdm import tqdm
 
 
-def fetch_blacklist(api_key: str):
-    """Return IPs from AbuseIPDB blacklist with confidence >= 80 in last day."""
+
+def _request_with_retry(
+    url: str,
+    headers: Dict[str, str],
+    params: Dict[str, Any],
+    max_retries: int = 5,
+) -> Response:
+    """Execute a GET request with exponential backoff retries."""
+    backoff = 1
+    for attempt in range(max_retries):
+        try:
+            resp = requests.get(url, headers=headers, params=params, timeout=30)
+            if resp.status_code == 429:
+                raise RuntimeError("Limite de requisi\u00e7\u00f5es excedido (HTTP 429)")
+            resp.raise_for_status()
+            return resp
+        except (requests.RequestException, RuntimeError) as exc:
+            if attempt == max_retries - 1:
+                raise RuntimeError(f"Falha ao conectar \u00e0 API: {exc}") from exc
+            time.sleep(backoff)
+            backoff *= 2
+
+
+def fetch_blacklist(api_key: str, config: Dict[str, Any]):
+    """Return IPs from AbuseIPDB blacklist respecting configured parameters."""
     url = "https://api.abuseipdb.com/api/v2/blacklist"
     headers = {"Key": api_key, "Accept": "application/json"}
-    params = {"confidenceMinimum": "80", "days": "1"}
-    try:
-        resp = requests.get(url, headers=headers, params=params, timeout=30)
-        if resp.status_code == 429:
-            raise RuntimeError("Limite de requisi\u00e7\u00f5es excedido (HTTP 429)")
-        if resp.status_code != 200:
-            raise RuntimeError(
-                f"Erro na requisi\u00e7\u00e3o: {resp.status_code} - {resp.text}"
-            )
-        return resp.json().get("data", [])
-    except requests.RequestException as exc:
-        raise RuntimeError(f"Falha ao conectar à API: {exc}") from exc
+    params = {
+        "confidenceMinimum": str(config.get("CONFIDENCE_MINIMUM", 80)),
+        "days": str(config.get("MAX_AGE_IN_DAYS", 1)),
+    }
+    resp = _request_with_retry(url, headers, params)
+    return resp.json().get("data", [])
 
 
-def fetch_check(ip: str, api_key: str):
+def fetch_check(ip: str, api_key: str, config: Dict[str, Any]):
     """Fetch AbuseIPDB check information for a given IP."""
     url = "https://api.abuseipdb.com/api/v2/check"
     headers = {"Key": api_key, "Accept": "application/json"}
-    params = {"ipAddress": ip, "maxAgeInDays": "1"}
-    try:
-        resp = requests.get(url, headers=headers, params=params, timeout=30)
-        if resp.status_code == 429:
-            raise RuntimeError("Limite de requisi\u00e7\u00f5es excedido (HTTP 429)")
-        if resp.status_code != 200:
-            raise RuntimeError(
-                f"Erro ao consultar {ip}: {resp.status_code} - {resp.text}"
-            )
-        return resp.json().get("data", {})
-    except requests.RequestException as exc:
-        raise RuntimeError(f"Falha ao consultar {ip}: {exc}") from exc
+    params = {
+        "ipAddress": ip,
+        "maxAgeInDays": str(config.get("MAX_AGE_IN_DAYS", 1)),
+    }
+    resp = _request_with_retry(url, headers, params)
+    return resp.json().get("data", {})
 
 
-def fetch_reports(ip: str, api_key: str):
+def fetch_reports(ip: str, api_key: str, config: Dict[str, Any]):
     """Get recent reports for an IP from AbuseIPDB."""
     url = "https://api.abuseipdb.com/api/v2/reports"
     headers = {"Key": api_key, "Accept": "application/json"}
-    params = {"ipAddress": ip, "maxAgeInDays": "1", "page": "1"}
-    try:
-        resp = requests.get(url, headers=headers, params=params, timeout=30)
-        if resp.status_code == 429:
-            raise RuntimeError("Limite de requisi\u00e7\u00f5es excedido (HTTP 429)")
-        if resp.status_code != 200:
-            raise RuntimeError(
-                f"Erro ao buscar reports de {ip}: {resp.status_code} - {resp.text}"
-            )
-        return resp.json().get("data", [])
-    except requests.RequestException as exc:
-        raise RuntimeError(f"Falha ao buscar reports de {ip}: {exc}") from exc
+    params = {
+        "ipAddress": ip,
+        "maxAgeInDays": str(config.get("MAX_AGE_IN_DAYS", 1)),
+        "page": "1",
+    }
+    resp = _request_with_retry(url, headers, params)
+    return resp.json().get("data", [])
 
 
-def fetch_ip_details(api_key: str, blacklist, limit: int = 100):
+def fetch_ip_details(api_key: str, blacklist, config: Dict[str, Any]):
     """Gather check and report data for the provided blacklist entries."""
+    limit = int(config.get("LIMIT_DETAILS", 100))
     details = []
-    for item in blacklist[:limit]:
+    for item in tqdm(blacklist[:limit], desc="Coletando detalhes"):
         ip = item.get("ipAddress")
         if not ip:
             continue
         try:
-            check_data = fetch_check(ip, api_key)
-            reports = fetch_reports(ip, api_key)
+            check_data = fetch_check(ip, api_key, config)
+            reports = fetch_reports(ip, api_key, config)
             if check_data:
                 details.append({"check": check_data, "reports": reports})
         except RuntimeError as exc:
