@@ -22,18 +22,21 @@ def generate_requirements(path: Path) -> None:
         logging.error("Erro ao gerar requirements.txt: %s", exc)
 
 
-def load_api_key() -> str:
-    """Load the AbuseIPDB API key from a .env file."""
-    # The README instructs placing the .env file at the package root
-    # (ioc_collector/.env). Previously this function tried to load the
-    # file from the utils module directory. Use parents[1] to follow the
-    # documented location instead.
+def load_api_keys() -> dict:
+    """Load API keys for all collectors from a .env file."""
     env_path = Path(__file__).resolve().parents[1] / ".env"
     load_dotenv(dotenv_path=env_path)
-    key = os.getenv("ABUSEIPDB_API_KEY")
-    if not key:
-        raise RuntimeError("Chave de API não encontrada no arquivo .env")
-    return key
+
+    keys = {
+        "ABUSEIPDB_API_KEY": os.getenv("ABUSEIPDB_API_KEY"),
+        "OTX_API_KEY": os.getenv("OTX_API_KEY"),
+        "URLHAUS_API_KEY": os.getenv("URLHAUS_API_KEY"),
+    }
+
+    if not keys["ABUSEIPDB_API_KEY"]:
+        raise RuntimeError("Chave ABUSEIPDB_API_KEY não encontrada no arquivo .env")
+
+    return keys
 
 
 def load_config() -> dict:
@@ -49,10 +52,14 @@ def load_config() -> dict:
     else:
         data = {}
 
+    active = os.getenv("ACTIVE_COLLECTORS", data.get("ACTIVE_COLLECTORS", "abuseipdb"))
+    active_list = [name.strip() for name in active.split(',') if name.strip()]
+
     return {
         "CONFIDENCE_MINIMUM": data.get("CONFIDENCE_MINIMUM", 80),
         "LIMIT_DETAILS": data.get("LIMIT_DETAILS", 100),
         "MAX_AGE_IN_DAYS": data.get("MAX_AGE_IN_DAYS", 1),
+        "ACTIVE_COLLECTORS": active_list,
     }
 
 
@@ -66,8 +73,8 @@ def save_daily_iocs(iocs, folder: Path) -> Path:
     return path
 
 
-def transform_data(details):
-    """Convert check and report details into IOC dictionaries."""
+def transform_abuse_data(details):
+    """Convert AbuseIPDB check and report data into IOC dictionaries."""
     today = datetime.date.today().isoformat()
     iocs = []
     for item in details:

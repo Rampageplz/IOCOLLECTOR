@@ -85,3 +85,16 @@ def fetch_ip_details(api_key: str, blacklist, config: Dict[str, Any]):
         except RuntimeError as exc:
             logging.error(exc)
     return details
+
+
+def collect_abuse(api_key: str, config: Dict[str, Any]):
+    """Return transformed IOCs from AbuseIPDB."""
+    try:
+        blacklist = fetch_blacklist(api_key, config)
+    except RuntimeError as exc:
+        logging.error(exc)
+        return []
+    details = fetch_ip_details(api_key, blacklist, config)
+    from ..utils.utils import transform_abuse_data
+
+    return transform_abuse_data(details)
