@@ -112,6 +112,7 @@ Também é possível gerar arquivos em CSV, TXT, Excel ou PDF:
 ```bash
 python -m ioc_collector.report --date AAAA-MM-DD --output-csv relatorio.csv \
     --output-txt relatorio.txt \
+    --output-xls relatorio.xls \
     --output-xlsx relatorio.xlsx \
     --output-pdf relatorio.pdf
 ```
