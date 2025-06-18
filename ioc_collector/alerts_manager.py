@@ -15,12 +15,13 @@ def update_alerts(new_iocs, alerts_file: Path) -> int:
     else:
         alerts = []
 
-    existing_values = {item.get("ioc_value") for item in alerts}
+    existing_pairs = {(item.get("ioc_value"), item.get("ioc_type")) for item in alerts}
     added = 0
     for ioc in new_iocs:
-        if ioc["ioc_value"] not in existing_values:
+        pair = (ioc.get("ioc_value"), ioc.get("ioc_type"))
+        if pair not in existing_pairs:
             alerts.append(ioc)
-            existing_values.add(ioc["ioc_value"])
+            existing_pairs.add(pair)
             added += 1
 
     with alerts_file.open("w", encoding="utf-8") as fh:

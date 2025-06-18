@@ -1,8 +1,13 @@
 """Coletores de dados da API AbuseIPDB."""
 
+import json
 import logging
+import os
 import time
-from typing import Any, Dict
+from pathlib import Path
+from typing import Any, Dict, Optional
+
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import requests
 from requests import Response
@@ -69,19 +74,56 @@ def fetch_reports(ip: str, api_key: str, config: Dict[str, Any]):
     return resp.json().get("data", [])
 
 
+def _fetch_single_ip(ip: str, api_key: str, config: Dict[str, Any]):
+    check_data = fetch_check(ip, api_key, config)
+    reports = fetch_reports(ip, api_key, config)
+    if check_data:
+        return {"check": check_data, "reports": reports}
+    return None
+
+
 def fetch_ip_details(api_key: str, blacklist, config: Dict[str, Any]):
-    """Gather check and report data for the provided blacklist entries."""
+    """Gather check and report data for the provided blacklist entries using pooling."""
     limit = int(config.get("LIMIT_DETAILS", 100))
+    ips = [item.get("ipAddress") for item in blacklist[:limit] if item.get("ipAddress")]
     details = []
-    for item in tqdm(blacklist[:limit], desc="Coletando detalhes"):
-        ip = item.get("ipAddress")
-        if not ip:
-            continue
-        try:
-            check_data = fetch_check(ip, api_key, config)
-            reports = fetch_reports(ip, api_key, config)
-            if check_data:
-                details.append({"check": check_data, "reports": reports})
-        except RuntimeError as exc:
-            logging.error(exc)
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        futures = {executor.submit(_fetch_single_ip, ip, api_key, config): ip for ip in ips}
+        for future in tqdm(as_completed(futures), total=len(futures), desc="Coletando detalhes"):
+            try:
+                result = future.result()
+                if result:
+                    details.append(result)
+            except Exception:
+                logging.exception("Erro ao coletar detalhes do IP")
     return details
+
+
+def collect_abuse(api_key: str, config: Dict[str, Any]):
+    """Return transformed IOCs from AbuseIPDB.
+
+    If the environment variable ``ABUSE_MOCK_FILE`` is set, data will be loaded
+    from the specified JSON file instead of calling the API. This helps during
+    testing when the AbuseIPDB rate limit is exceeded.
+    """
+
+    mock_path = os.getenv("ABUSE_MOCK_FILE")
+    if mock_path:
+        path = Path(mock_path)
+        if path.exists():
+            with path.open("r", encoding="utf-8") as fh:
+                details = json.load(fh)
+            logging.info("Usando dados simulados do AbuseIPDB (%s entradas)", len(details))
+            from ..utils.utils import transform_abuse_data
+            return transform_abuse_data(details)
+        logging.warning("Arquivo ABUSE_MOCK_FILE %s não encontrado", mock_path)
+
+    try:
+        blacklist = fetch_blacklist(api_key, config)
+    except RuntimeError:
+        logging.exception("Erro ao obter blacklist do AbuseIPDB")
+        return []
+    details = fetch_ip_details(api_key, blacklist, config)
+    from ..utils.utils import transform_abuse_data
+
+    return transform_abuse_data(details)

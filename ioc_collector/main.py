@@ -8,23 +8,42 @@ from pathlib import Path
 from rich.logging import RichHandler
 from pythonjsonlogger import jsonlogger
 
-from collectors.collector_abuse import fetch_blacklist, fetch_ip_details
-from utils.utils import (
+from ioc_collector.collectors.collector_abuse import collect_abuse
+from ioc_collector.collectors.collector_otx import collect_otx
+from ioc_collector.collectors.collector_urlhaus import collect_urlhaus
+from ioc_collector.utils.utils import (
     generate_requirements,
-    load_api_key,
+    load_api_keys,
     load_config,
     save_daily_iocs,
-    transform_data,
 )
-from alerts_manager import update_alerts, check_duplicates, print_top_reported
+from ioc_collector.alerts_manager import (
+    update_alerts,
+    check_duplicates,
+    print_top_reported,
+)
 
 
 LOG_DIR = Path(__file__).resolve().parent.parent / "logs"
-DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "abuseipdb"
+DATA_ROOT = Path(__file__).resolve().parent.parent / "data"
 ALERTS_FILE = Path(__file__).resolve().parent / "alerts.json"
 
 
-def setup_logging() -> None:
+def show_banner() -> None:
+    """Exibe informações iniciais e coleta chaves de API se necessário."""
+    banner = (
+        "\n" +
+        "########################\n" +
+        "#        Inteltool       #\n" +
+        "#  O que é: coleta de   #\n" +
+        "#  IOCs de múltiplos    #\n" +
+        "#  feeds.               #\n" +
+        "########################\n"
+    )
+    print(banner)
+
+
+def setup_logging(level: int = logging.INFO) -> None:
     """Configure file and console logging with RichHandler and JSON file."""
     LOG_DIR.mkdir(parents=True, exist_ok=True)
     log_path = LOG_DIR / f"{datetime.date.today().strftime('%Y-%m-%d')}.log"
@@ -40,44 +59,42 @@ def setup_logging() -> None:
 
     console_handler = RichHandler(rich_tracebacks=True)
 
-    logging.basicConfig(
-        level=logging.INFO,
-        handlers=[file_handler, json_handler, console_handler],
-    )
+    logging.basicConfig(level=level, handlers=[file_handler, json_handler, console_handler])
 
 
-def collect(api_key: str, config: dict) -> None:
-    """Perform the entire IOC collection workflow."""
-    logging.info("In\u00edcio da coleta")
+def run_collectors(config: dict, keys: dict, selected: list | None = None) -> None:
+    """Execute all active collectors defined in configuration."""
+    active = selected or config.get("ACTIVE_COLLECTORS", ["abuseipdb"])
+    all_iocs = []
 
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    today_file = DATA_DIR / f"{datetime.date.today().strftime('%Y-%m-%d')}.json"
-    if today_file.exists():
-        logging.info("A coleta j\u00e1 foi feita hoje")
+    for name in active:
+        logging.info("In\u00edcio da coleta %s", name)
+        if name == "abuseipdb":
+            iocs = collect_abuse(keys.get("ABUSEIPDB_API_KEY"), config)
+        elif name == "otx":
+            api = keys.get("OTX_API_KEY")
+            if not api:
+                logging.warning("OTX_API_KEY não definido; ignorando coletor")
+                continue
+            iocs = collect_otx(api)
+        elif name == "urlhaus":
+            iocs = collect_urlhaus()
+        else:
+            logging.warning("Coletor desconhecido: %s", name)
+            continue
+
+        logging.info("%s IOCs coletados de %s", len(iocs), name)
+        folder = DATA_ROOT / name
+        dicts = [ioc.to_dict() for ioc in iocs]
+        save_daily_iocs(dicts, folder)
+        all_iocs.extend(dicts)
+        logging.info("Fim da coleta %s", name)
+
+    if not all_iocs:
+        logging.info("Nenhum IOC coletado")
         return
-    try:
-        blacklist = fetch_blacklist(api_key, config)
-    except RuntimeError as exc:
-        logging.error(exc)
-        return
 
-    if blacklist:
-        logging.info("IPs com score >= 80 nas últimas 24h:")
-        for item in blacklist:
-            ip = item.get("ipAddress")
-            score = item.get("abuseConfidenceScore")
-            logging.info("  %s - score %s", ip, score)
-        logging.info("Total: %s", len(blacklist))
-    else:
-        logging.info("Nenhum IP reportado nas últimas 24h com score >= 80.")
-
-    details = fetch_ip_details(api_key, blacklist, config)
-    logging.debug("Detalhes retornados: %s", details)
-    processed = transform_data(details)
-    logging.info("IOCs coletados: %s", len(processed))
-
-    save_daily_iocs(processed, DATA_DIR)
-    added = update_alerts(processed, ALERTS_FILE)
+    added = update_alerts(all_iocs, ALERTS_FILE)
     if added:
         logging.info("Novos IOCs adicionados: %s", added)
     else:
@@ -85,39 +102,51 @@ def collect(api_key: str, config: dict) -> None:
 
     dups = check_duplicates(ALERTS_FILE)
     if dups:
-        logging.warning("IPs duplicados em alerts.json: %s", ", ".join(dups))
-    else:
-        logging.info("Nenhum IP duplicado em alerts.json.")
+        logging.warning("Valores duplicados em alerts.json: %s", ", ".join(dups))
 
-    generate_requirements(Path(__file__).with_name("requirements.txt"))
-
-    today = datetime.date.today().isoformat()
-    print_top_reported(today, ALERTS_FILE)
-    logging.info("Fim da coleta")
+    if config.get("GENERATE_REQUIREMENTS", True):
+        generate_requirements(Path(__file__).with_name("requirements.txt"))
 
 
 def main() -> None:
     """Parse command line arguments and start the collection."""
-    setup_logging()
-    parser = argparse.ArgumentParser(description="Coletor de IOCs do AbuseIPDB")
+    parser = argparse.ArgumentParser(description="Coletor de IOCs de múltiplos feeds")
     parser.add_argument(
         "--top",
         help="Mostrar IPs mais reportados na data (YYYY-MM-DD) a partir de alerts.json",
     )
+    parser.add_argument(
+        "--log-level",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+        default="INFO",
+        help="Nível de log do programa",
+    )
+    parser.add_argument(
+        "--collectors",
+        help="Lista de coletores a executar (separados por vírgula)",
+    )
     args = parser.parse_args()
 
+    show_banner()
+
+    setup_logging(getattr(logging, args.log_level))
+
     try:
-        api_key = load_api_key()
+        api_keys = load_api_keys()
         config = load_config()
-    except RuntimeError as exc:
-        logging.error(exc)
+    except RuntimeError:
+        logging.exception("Erro ao carregar configuração ou API keys")
         return
 
     if args.top:
         print_top_reported(args.top, ALERTS_FILE)
         return
 
-    collect(api_key, config)
+    selected = None
+    if args.collectors:
+        selected = [c.strip() for c in args.collectors.split(',') if c.strip()]
+
+    run_collectors(config, api_keys, selected)
 
 
 if __name__ == "__main__":

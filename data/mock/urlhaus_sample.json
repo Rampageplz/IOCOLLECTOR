@@ -1,0 +1,12 @@
+{
+  "urls": [
+    {
+      "url": "http://evil.com",
+      "threat": "malware",
+      "tags": ["tag"],
+      "url_status": "online",
+      "urlhaus_reference": "https://urlhaus.abuse.ch/url/12345/",
+      "host": "evil.com"
+    }
+  ]
+}
