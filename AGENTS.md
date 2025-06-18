@@ -27,4 +27,9 @@ The initial sprint added a reporting module with several options.
  - Coverage analysis with feed percentages.
  - Missing feeds detection and insights section.
 
+### Next steps
+- Add asynchronous collectors for performance.
+- Provide dashboard visualization for reports.
+- Improve documentation about the new `--value` and `--sort` options.
+
 To update these instructions send a pull request editing this file.
