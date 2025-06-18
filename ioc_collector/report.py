@@ -15,6 +15,7 @@ from typing import Dict, Iterable, List, Optional
 from fpdf import FPDF
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
+import xlwt
 
 from rich.console import Console
 from rich.table import Table
@@ -166,6 +167,64 @@ def _save_pdf(report: Report, path: Path) -> None:
     logging.info("✅ PDF salvo em %s", path.resolve())
 
 
+def _save_xls(report: Report, path: Path) -> None:
+    wb = xlwt.Workbook()
+    bold = xlwt.easyxf("font: bold on; pattern: pattern solid, fore_colour gray25")
+
+    ws_summary = wb.add_sheet("Resumo")
+    ws_summary.write(0, 0, "Feed", bold)
+    ws_summary.write(0, 1, "Quantidade", bold)
+    row = 1
+    for src, total in report.by_source.items():
+        ws_summary.write(row, 0, src)
+        ws_summary.write(row, 1, total)
+        row += 1
+    ws_summary.write(row, 0, "Total", bold)
+    ws_summary.write(row, 1, report.total_iocs)
+
+    ws_type = wb.add_sheet("Por Tipo")
+    ws_type.write(0, 0, "Tipo", bold)
+    ws_type.write(0, 1, "Quantidade", bold)
+    row = 1
+    for t, count in report.by_type.items():
+        ws_type.write(row, 0, t)
+        ws_type.write(row, 1, count)
+        row += 1
+
+    ws_dups = wb.add_sheet("Duplicados")
+    ws_dups.write(0, 0, "IOC", bold)
+    ws_dups.write(0, 1, "Feeds", bold)
+    row = 1
+    for val, feeds in report.duplicates.items():
+        ws_dups.write(row, 0, val)
+        ws_dups.write(row, 1, ", ".join(feeds))
+        row += 1
+
+    ws_top = wb.add_sheet("Top")
+    ws_top.write(0, 0, "IOC", bold)
+    ws_top.write(0, 1, "Total", bold)
+    row = 1
+    for val, cnt in report.top_values:
+        ws_top.write(row, 0, val)
+        ws_top.write(row, 1, cnt)
+        row += 1
+
+    ws_iocs = wb.add_sheet("IOC List")
+    header = sorted({k for item in report.iocs for k in item.keys()}) if report.iocs else []
+    for col, h in enumerate(header):
+        ws_iocs.write(0, col, h, bold)
+        ws_iocs.col(col).width = 256 * 20
+    for row_idx, item in enumerate(report.iocs, start=1):
+        for col_idx, h in enumerate(header):
+            val = item.get(h, "")
+            if isinstance(val, list):
+                val = ", ".join(str(v) for v in val)
+            ws_iocs.write(row_idx, col_idx, val)
+
+    wb.save(str(path))
+    logging.info("✅ XLS salvo em %s", path.resolve())
+
+
 def _save_xlsx(report: Report, path: Path) -> None:
     wb = Workbook()
 
@@ -271,6 +330,7 @@ def main() -> None:
     parser.add_argument("--output-json", help="Salvar relatório em JSON")
     parser.add_argument("--output-csv", help="Salvar relatório em CSV")
     parser.add_argument("--output-txt", help="Salvar relatório em TXT")
+    parser.add_argument("--output-xls", help="Salvar relatório em XLS")
     parser.add_argument("--output-xlsx", help="Salvar relatório em Excel")
     parser.add_argument("--output-pdf", help="Salvar relatório em PDF")
     parser.add_argument("--type", dest="ioc_type", help="Filtrar por tipo de IOC")
@@ -305,6 +365,8 @@ def main() -> None:
         _save_csv(report, Path(args.output_csv))
     if args.output_txt:
         _save_txt(report, Path(args.output_txt))
+    if args.output_xls:
+        _save_xls(report, Path(args.output_xls))
     if args.output_xlsx:
         _save_xlsx(report, Path(args.output_xlsx))
     if args.output_pdf:

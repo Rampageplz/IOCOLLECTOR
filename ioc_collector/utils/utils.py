@@ -8,7 +8,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from dotenv import load_dotenv
+from ..models import IOC
 
 
 def encrypt_key(key: str) -> str:
@@ -100,12 +100,10 @@ def save_daily_iocs(iocs, folder: Path) -> Path:
     return path
 
 
-from ..models import IOC
-
-
 def transform_abuse_data(details):
     """Convert AbuseIPDB check and report data into IOC objects."""
-    today = datetime.date.today().isoformat()
+    timestamp = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    today = timestamp.split("T")[0]
     iocs = []
     for item in details:
         check = item.get("check", {})
@@ -121,6 +119,7 @@ def transform_abuse_data(details):
         iocs.append(
             IOC(
                 date=today,
+                time=timestamp,
                 source="AbuseIPDB",
                 ioc_type="IP",
                 ioc_value=ip,
