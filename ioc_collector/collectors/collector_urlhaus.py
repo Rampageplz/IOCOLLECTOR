@@ -13,8 +13,8 @@ def collect_urlhaus() -> List[Dict[str, Any]]:
     try:
         resp = requests.get(url, timeout=30)
         resp.raise_for_status()
-    except requests.RequestException as exc:
-        logging.error("Erro ao acessar URLHaus: %s", exc)
+    except requests.RequestException:
+        logging.exception("Erro ao acessar URLHaus")
         return []
 
     data = resp.json()

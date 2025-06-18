@@ -18,8 +18,8 @@ def generate_requirements(path: Path) -> None:
             [sys.executable, "-m", "pip", "freeze"], capture_output=True, text=True, check=True
         )
         path.write_text(result.stdout)
-    except Exception as exc:
-        logging.error("Erro ao gerar requirements.txt: %s", exc)
+    except Exception:
+        logging.exception("Erro ao gerar requirements.txt")
 
 
 def load_api_keys() -> dict:
@@ -46,8 +46,8 @@ def load_config() -> dict:
         try:
             with config_path.open("r", encoding="utf-8") as fh:
                 data = json.load(fh)
-        except Exception as exc:
-            logging.error("Erro ao carregar config.json: %s", exc)
+        except Exception:
+            logging.exception("Erro ao carregar config.json")
             data = {}
     else:
         data = {}

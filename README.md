@@ -40,6 +40,15 @@ Este projeto realiza a coleta diária de indicadores de comprometimento (IOCs) d
    Para testes offline do AbuseIPDB defina `ABUSE_MOCK_FILE` apontando para um
    arquivo JSON contendo os dados simulados do feed (ex.: `data/mock/abuse_sample.json`).
 
+### Testes com API real ou mock
+
+Para usar as APIs reais, apenas garanta que as chaves estejam presentes no `.env`.
+Se `ABUSE_MOCK_FILE` estiver definido, o coletor do AbuseIPDB usará o arquivo
+informado em vez da API, útil quando o limite de requisições é atingido.
+
+O OTX possui limite diário de requisições (documentação indica cerca de 1000
+chamadas/dia). Ao ultrapassar esse valor o serviço retorna HTTP 429.
+
 4. Execute o coletor:
 
    ```bash

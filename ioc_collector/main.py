@@ -46,7 +46,7 @@ def setup_logging() -> None:
     console_handler = RichHandler(rich_tracebacks=True)
 
     logging.basicConfig(
-        level=logging.INFO,
+        level=logging.DEBUG,
         handlers=[file_handler, json_handler, console_handler],
     )
 
@@ -108,8 +108,8 @@ def main() -> None:
     try:
         api_keys = load_api_keys()
         config = load_config()
-    except RuntimeError as exc:
-        logging.error(exc)
+    except RuntimeError:
+        logging.exception("Erro ao carregar configuração ou API keys")
         return
 
     if args.top:

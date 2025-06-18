@@ -85,8 +85,8 @@ def fetch_ip_details(api_key: str, blacklist, config: Dict[str, Any]):
             reports = fetch_reports(ip, api_key, config)
             if check_data:
                 details.append({"check": check_data, "reports": reports})
-        except RuntimeError as exc:
-            logging.error(exc)
+        except RuntimeError:
+            logging.exception("Erro ao coletar detalhes do IP")
     return details
 
 
@@ -111,8 +111,8 @@ def collect_abuse(api_key: str, config: Dict[str, Any]):
 
     try:
         blacklist = fetch_blacklist(api_key, config)
-    except RuntimeError as exc:
-        logging.error(exc)
+    except RuntimeError:
+        logging.exception("Erro ao obter blacklist do AbuseIPDB")
         return []
     details = fetch_ip_details(api_key, blacklist, config)
     from ..utils.utils import transform_abuse_data

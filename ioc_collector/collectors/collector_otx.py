@@ -17,7 +17,7 @@ def collect_otx(api_key: str) -> List[Dict[str, Any]]:
         resp = requests.get(url, headers=headers, params=params, timeout=30)
         resp.raise_for_status()
     except requests.RequestException as exc:
-        logging.error("Erro ao acessar OTX: %s", exc)
+        logging.exception("Erro ao acessar OTX")
         return []
 
     pulses = resp.json().get("results", [])
