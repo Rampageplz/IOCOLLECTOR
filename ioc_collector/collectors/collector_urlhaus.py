@@ -6,8 +6,13 @@ from typing import Any, Dict, List
 
 import requests
 
+# A API do URLHaus não exige autenticação no endpoint utilizado.
+# A variável URLHAUS_API_KEY é carregada apenas para compatibilidade futura.
 
-def collect_urlhaus() -> List[Dict[str, Any]]:
+from ..models import IOC
+
+
+def collect_urlhaus() -> List[IOC]:
     """Fetch recent URLs from URLHaus API."""
     url = "https://urlhaus-api.abuse.ch/v1/urls/recent/"
     try:
@@ -20,21 +25,23 @@ def collect_urlhaus() -> List[Dict[str, Any]]:
     data = resp.json()
     entries = data.get("urls", [])
     today = datetime.date.today().isoformat()
-    iocs: List[Dict[str, Any]] = []
+    iocs: List[IOC] = []
     for item in entries:
         iocs.append(
-            {
-                "date": today,
-                "source": "URLHaus",
-                "ioc_type": "URL",
-                "ioc_value": item.get("url"),
-                "description": item.get("threat"),
-                "tags": item.get("tags", []),
-                "mitigation": ["Block URL", "Monitor web traffic"],
-                "url_status": item.get("url_status"),
-                "reference": item.get("urlhaus_reference"),
-                "host": item.get("host"),
-            }
+            IOC(
+                date=today,
+                source="URLHaus",
+                ioc_type="URL",
+                ioc_value=item.get("url"),
+                description=item.get("threat"),
+                tags=item.get("tags", []),
+                mitigation=["Block URL", "Monitor web traffic"],
+                extra={
+                    "url_status": item.get("url_status"),
+                    "reference": item.get("urlhaus_reference"),
+                    "host": item.get("host"),
+                },
+            )
         )
     logging.info("URLHaus retornou %s IOCs", len(iocs))
     return iocs

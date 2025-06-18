@@ -23,7 +23,7 @@ def generate_requirements(path: Path) -> None:
 
 
 def load_api_keys() -> dict:
-    """Load API keys for all collectors from a .env file."""
+    """Load API keys for all collectors from a .env file or prompt the user."""
     env_path = Path(__file__).resolve().parents[1] / ".env"
     load_dotenv(dotenv_path=env_path)
 
@@ -33,8 +33,14 @@ def load_api_keys() -> dict:
         "URLHAUS_API_KEY": os.getenv("URLHAUS_API_KEY"),
     }
 
-    if not keys["ABUSEIPDB_API_KEY"]:
-        raise RuntimeError("Chave ABUSEIPDB_API_KEY não encontrada no arquivo .env")
+    mock = os.getenv("ABUSE_MOCK_FILE")
+    if not keys["ABUSEIPDB_API_KEY"] and not mock:
+        raise RuntimeError("Chave ABUSEIPDB_API_KEY não encontrada e ABUSE_MOCK_FILE não definido")
+
+    if not (keys.get("OTX_API_KEY") and keys.get("URLHAUS_API_KEY")) and not os.getenv("NO_PROMPT"):
+        from .prompt import prompt_api_keys
+
+        keys.update(prompt_api_keys(keys))
 
     return keys
 
@@ -60,6 +66,7 @@ def load_config() -> dict:
         "LIMIT_DETAILS": data.get("LIMIT_DETAILS", 100),
         "MAX_AGE_IN_DAYS": data.get("MAX_AGE_IN_DAYS", 1),
         "ACTIVE_COLLECTORS": active_list,
+        "GENERATE_REQUIREMENTS": data.get("GENERATE_REQUIREMENTS", True),
     }
 
 
@@ -68,42 +75,46 @@ def save_daily_iocs(iocs, folder: Path) -> Path:
     folder.mkdir(parents=True, exist_ok=True)
     filename = datetime.date.today().strftime("%Y-%m-%d.json")
     path = folder / filename
+    prepared = [ioc.to_dict() if isinstance(ioc, IOC) else ioc for ioc in iocs]
     with path.open("w", encoding="utf-8") as fh:
-        json.dump(iocs, fh, indent=2, ensure_ascii=False)
+        json.dump(prepared, fh, indent=2, ensure_ascii=False)
     return path
 
 
+from ..models import IOC
+
+
 def transform_abuse_data(details):
-    """Convert AbuseIPDB check and report data into IOC dictionaries."""
+    """Convert AbuseIPDB check and report data into IOC objects."""
     today = datetime.date.today().isoformat()
     iocs = []
     for item in details:
         check = item.get("check", {})
         reports = item.get("reports", [])
         ip = check.get("ipAddress")
+        if not ip:
+            continue
         score = check.get("abuseConfidenceScore")
         total = check.get("totalReports")
         country = check.get("countryCode")
         last = check.get("lastReportedAt")
-        if not ip:
-            continue
+
         iocs.append(
-            {
-                "date": today,
-                "source": "AbuseIPDB",
-                "ioc_type": "IP",
-                "ioc_value": ip,
-                "abuse_confidence_score": score,
-                "totalReports": total,
-                "countryCode": country,
-                "lastReportedAt": last,
-                "reports": reports,
-                "description": f"IP com score {score} e {total} reports.",
-                "tags": [],
-                "mitigation": [
-                    "Block IP in firewall",
-                    "Monitor login attempts from this IP",
-                ],
-            }
+            IOC(
+                date=today,
+                source="AbuseIPDB",
+                ioc_type="IP",
+                ioc_value=ip,
+                description=f"IP com score {score} e {total} reports.",
+                tags=[],
+                mitigation=["Block IP in firewall", "Monitor login attempts from this IP"],
+                extra={
+                    "abuse_confidence_score": score,
+                    "totalReports": total,
+                    "countryCode": country,
+                    "lastReportedAt": last,
+                    "reports": reports,
+                },
+            )
         )
     return iocs

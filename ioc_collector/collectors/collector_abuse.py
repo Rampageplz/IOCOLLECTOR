@@ -5,7 +5,9 @@ import logging
 import os
 import time
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
+
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import requests
 from requests import Response
@@ -72,21 +74,28 @@ def fetch_reports(ip: str, api_key: str, config: Dict[str, Any]):
     return resp.json().get("data", [])
 
 
+def _fetch_single_ip(ip: str, api_key: str, config: Dict[str, Any]):
+    check_data = fetch_check(ip, api_key, config)
+    reports = fetch_reports(ip, api_key, config)
+    if check_data:
+        return {"check": check_data, "reports": reports}
+    return None
+
+
 def fetch_ip_details(api_key: str, blacklist, config: Dict[str, Any]):
-    """Gather check and report data for the provided blacklist entries."""
+    """Gather check and report data for the provided blacklist entries using pooling."""
     limit = int(config.get("LIMIT_DETAILS", 100))
+    ips = [item.get("ipAddress") for item in blacklist[:limit] if item.get("ipAddress")]
     details = []
-    for item in tqdm(blacklist[:limit], desc="Coletando detalhes"):
-        ip = item.get("ipAddress")
-        if not ip:
-            continue
-        try:
-            check_data = fetch_check(ip, api_key, config)
-            reports = fetch_reports(ip, api_key, config)
-            if check_data:
-                details.append({"check": check_data, "reports": reports})
-        except RuntimeError:
-            logging.exception("Erro ao coletar detalhes do IP")
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        futures = {executor.submit(_fetch_single_ip, ip, api_key, config): ip for ip in ips}
+        for future in tqdm(as_completed(futures), total=len(futures), desc="Coletando detalhes"):
+            try:
+                result = future.result()
+                if result:
+                    details.append(result)
+            except Exception:
+                logging.exception("Erro ao coletar detalhes do IP")
     return details
 
 

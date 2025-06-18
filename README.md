@@ -29,7 +29,10 @@ Este projeto realiza a coleta diária de indicadores de comprometimento (IOCs) d
    ```
 
 3. Crie um arquivo `.env` dentro da pasta `ioc_collector/` com as chaves de API
-   necessárias:
+   necessárias (ou informe-as quando o programa solicitar). Na primeira execução
+   será exibido um banner "Inteltool" perguntando se deseja cadastrar ou alterar
+   as chaves das APIs. Se deixar em branco, a chave padrão do OTX será usada e o
+   AbuseIPDB funcionará em modo mock.
 
    ```bash
  ABUSEIPDB_API_KEY=SUACHAVE
@@ -39,6 +42,8 @@ Este projeto realiza a coleta diária de indicadores de comprometimento (IOCs) d
    Defina também `ACTIVE_COLLECTORS` caso queira habilitar ou desabilitar feeds.
    Para testes offline do AbuseIPDB defina `ABUSE_MOCK_FILE` apontando para um
    arquivo JSON contendo os dados simulados do feed (ex.: `data/mock/abuse_sample.json`).
+   Se `ABUSE_MOCK_FILE` estiver definido não é exigida `ABUSEIPDB_API_KEY`.
+   Quando `ABUSE_MOCK_FILE` estiver presente não é necessário informar `ABUSEIPDB_API_KEY`.
 
 ### Testes com API real ou mock
 
@@ -61,6 +66,12 @@ chamadas/dia). Ao ultrapassar esse valor o serviço retorna HTTP 429.
    python -m ioc_collector.main --top AAAA-MM-DD
    ```
 
+É possível definir o nível de log e escolher os coletores em tempo de execução:
+
+```bash
+python -m ioc_collector.main --log-level DEBUG --collectors abuseipdb,otx
+```
+
 ### Configuração
 
 O arquivo `config.json` define parâmetros dos coletores. Exemplo:
@@ -69,12 +80,13 @@ O arquivo `config.json` define parâmetros dos coletores. Exemplo:
 {
   "CONFIDENCE_MINIMUM": 80,
   "LIMIT_DETAILS": 100,
-  "MAX_AGE_IN_DAYS": 1,
-  "ACTIVE_COLLECTORS": "abuseipdb,otx,urlhaus"
+ "MAX_AGE_IN_DAYS": 1,
+  "ACTIVE_COLLECTORS": "abuseipdb,otx,urlhaus",
+  "GENERATE_REQUIREMENTS": true
 }
 ```
 
-`CONFIDENCE_MINIMUM`, `LIMIT_DETAILS` e `MAX_AGE_IN_DAYS` são usados pelo coletor do AbuseIPDB. `ACTIVE_COLLECTORS` define quais feeds estarão habilitados (separados por vírgula).
+`CONFIDENCE_MINIMUM`, `LIMIT_DETAILS` e `MAX_AGE_IN_DAYS` são usados pelo coletor do AbuseIPDB. `ACTIVE_COLLECTORS` define quais feeds estarão habilitados (separados por vírgula). `GENERATE_REQUIREMENTS` controla a criação automática do `requirements.txt`.
 Para testes locais sem acessar a API, informe `ABUSE_MOCK_FILE` apontando para um JSON com o retorno esperado.
 
 ## Debug

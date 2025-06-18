@@ -6,8 +6,10 @@ from typing import Any, Dict, List
 
 import requests
 
+from ..models import IOC
 
-def collect_otx(api_key: str) -> List[Dict[str, Any]]:
+
+def collect_otx(api_key: str) -> List[IOC]:
     """Fetch indicators from subscribed pulses."""
     url = "https://otx.alienvault.com/api/v1/pulses/subscribed"
     headers = {"X-OTX-API-KEY": api_key}
@@ -22,22 +24,21 @@ def collect_otx(api_key: str) -> List[Dict[str, Any]]:
 
     pulses = resp.json().get("results", [])
     today = datetime.date.today().isoformat()
-    iocs: List[Dict[str, Any]] = []
+    iocs: List[IOC] = []
     for pulse in pulses:
         tags = pulse.get("tags", [])
         for ind in pulse.get("indicators", []):
             iocs.append(
-                {
-                    "date": today,
-                    "source": "OTX",
-                    "ioc_type": ind.get("type"),
-                    "ioc_value": ind.get("indicator"),
-                    "description": ind.get("description") or pulse.get("name"),
-                    "tags": tags,
-                    "mitigation": [],
-                    "pulse_id": pulse.get("id"),
-                    "pulse_name": pulse.get("name"),
-                }
+                IOC(
+                    date=today,
+                    source="OTX",
+                    ioc_type=ind.get("type"),
+                    ioc_value=ind.get("indicator"),
+                    description=ind.get("description") or pulse.get("name"),
+                    tags=tags,
+                    mitigation=[],
+                    extra={"pulse_id": pulse.get("id"), "pulse_name": pulse.get("name")},
+                )
             )
 
     logging.info("OTX retornou %s IOCs", len(iocs))

@@ -29,7 +29,21 @@ DATA_ROOT = Path(__file__).resolve().parent.parent / "data"
 ALERTS_FILE = Path(__file__).resolve().parent / "alerts.json"
 
 
-def setup_logging() -> None:
+def show_banner() -> None:
+    """Exibe informações iniciais e coleta chaves de API se necessário."""
+    banner = (
+        "\n" +
+        "########################\n" +
+        "#        Inteltool       #\n" +
+        "#  O que é: coleta de   #\n" +
+        "#  IOCs de múltiplos    #\n" +
+        "#  feeds.               #\n" +
+        "########################\n"
+    )
+    print(banner)
+
+
+def setup_logging(level: int = logging.INFO) -> None:
     """Configure file and console logging with RichHandler and JSON file."""
     LOG_DIR.mkdir(parents=True, exist_ok=True)
     log_path = LOG_DIR / f"{datetime.date.today().strftime('%Y-%m-%d')}.log"
@@ -45,15 +59,12 @@ def setup_logging() -> None:
 
     console_handler = RichHandler(rich_tracebacks=True)
 
-    logging.basicConfig(
-        level=logging.DEBUG,
-        handlers=[file_handler, json_handler, console_handler],
-    )
+    logging.basicConfig(level=level, handlers=[file_handler, json_handler, console_handler])
 
 
-def run_collectors(config: dict, keys: dict) -> None:
+def run_collectors(config: dict, keys: dict, selected: list | None = None) -> None:
     """Execute all active collectors defined in configuration."""
-    active = config.get("ACTIVE_COLLECTORS", ["abuseipdb"])
+    active = selected or config.get("ACTIVE_COLLECTORS", ["abuseipdb"])
     all_iocs = []
 
     for name in active:
@@ -74,8 +85,9 @@ def run_collectors(config: dict, keys: dict) -> None:
 
         logging.info("%s IOCs coletados de %s", len(iocs), name)
         folder = DATA_ROOT / name
-        save_daily_iocs(iocs, folder)
-        all_iocs.extend(iocs)
+        dicts = [ioc.to_dict() for ioc in iocs]
+        save_daily_iocs(dicts, folder)
+        all_iocs.extend(dicts)
         logging.info("Fim da coleta %s", name)
 
     if not all_iocs:
@@ -92,18 +104,32 @@ def run_collectors(config: dict, keys: dict) -> None:
     if dups:
         logging.warning("Valores duplicados em alerts.json: %s", ", ".join(dups))
 
-    generate_requirements(Path(__file__).with_name("requirements.txt"))
+    if config.get("GENERATE_REQUIREMENTS", True):
+        generate_requirements(Path(__file__).with_name("requirements.txt"))
 
 
 def main() -> None:
     """Parse command line arguments and start the collection."""
-    setup_logging()
     parser = argparse.ArgumentParser(description="Coletor de IOCs de múltiplos feeds")
     parser.add_argument(
         "--top",
         help="Mostrar IPs mais reportados na data (YYYY-MM-DD) a partir de alerts.json",
     )
+    parser.add_argument(
+        "--log-level",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+        default="INFO",
+        help="Nível de log do programa",
+    )
+    parser.add_argument(
+        "--collectors",
+        help="Lista de coletores a executar (separados por vírgula)",
+    )
     args = parser.parse_args()
+
+    show_banner()
+
+    setup_logging(getattr(logging, args.log_level))
 
     try:
         api_keys = load_api_keys()
@@ -116,7 +142,11 @@ def main() -> None:
         print_top_reported(args.top, ALERTS_FILE)
         return
 
-    run_collectors(config, api_keys)
+    selected = None
+    if args.collectors:
+        selected = [c.strip() for c in args.collectors.split(',') if c.strip()]
+
+    run_collectors(config, api_keys, selected)
 
 
 if __name__ == "__main__":
