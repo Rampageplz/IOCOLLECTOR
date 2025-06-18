@@ -2,7 +2,7 @@
 
 import datetime
 import logging
-from typing import Any, Dict, List
+from typing import List
 
 import requests
 
@@ -24,12 +24,14 @@ def collect_urlhaus() -> List[IOC]:
 
     data = resp.json()
     entries = data.get("urls", [])
-    today = datetime.date.today().isoformat()
+    timestamp = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    today = timestamp.split("T")[0]
     iocs: List[IOC] = []
     for item in entries:
         iocs.append(
             IOC(
                 date=today,
+                time=timestamp,
                 source="URLHaus",
                 ioc_type="URL",
                 ioc_value=item.get("url"),

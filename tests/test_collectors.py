@@ -5,8 +5,6 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import pytest
-
 from ioc_collector.collectors.collector_abuse import collect_abuse
 from ioc_collector.collectors.collector_otx import collect_otx
 from ioc_collector.collectors.collector_urlhaus import collect_urlhaus

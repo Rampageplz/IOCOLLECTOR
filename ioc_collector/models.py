@@ -25,6 +25,7 @@ class IOC:
     source: str
     ioc_type: str
     ioc_value: str
+    time: str = ""
     description: str = ""
     tags: List[str] = field(default_factory=list)
     mitigation: List[str] = field(default_factory=list)

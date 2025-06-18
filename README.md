@@ -12,6 +12,8 @@ Este projeto realiza a coleta diária de indicadores de comprometimento (IOCs) d
 - `ioc_collector/main.py` - ponto de entrada da aplicação
 - `data/{source}/` - arquivos diários de cada feed
 - `logs/` - arquivos de log nos formatos `YYYY-MM-DD.log` e `YYYY-MM-DD.json`
+- cada IOC inclui o campo `time` com data e hora em UTC no formato
+  `YYYY-MM-DDTHH:MM:SSZ`
 
 ## Uso
 

@@ -2,7 +2,7 @@
 
 import datetime
 import logging
-from typing import Any, Dict, List
+from typing import List
 
 import requests
 
@@ -18,12 +18,13 @@ def collect_otx(api_key: str) -> List[IOC]:
     try:
         resp = requests.get(url, headers=headers, params=params, timeout=30)
         resp.raise_for_status()
-    except requests.RequestException as exc:
+    except requests.RequestException:
         logging.exception("Erro ao acessar OTX")
         return []
 
     pulses = resp.json().get("results", [])
-    today = datetime.date.today().isoformat()
+    timestamp = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    today = timestamp.split("T")[0]
     iocs: List[IOC] = []
     for pulse in pulses:
         tags = pulse.get("tags", [])
@@ -31,6 +32,7 @@ def collect_otx(api_key: str) -> List[IOC]:
             iocs.append(
                 IOC(
                     date=today,
+                    time=timestamp,
                     source="OTX",
                     ioc_type=ind.get("type"),
                     ioc_value=ind.get("indicator"),

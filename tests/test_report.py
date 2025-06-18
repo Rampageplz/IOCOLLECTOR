@@ -1,5 +1,4 @@
 import json
-from pathlib import Path
 
 from ioc_collector.report import generate_report, _save_csv, _save_txt, _save_json
 
