@@ -2,7 +2,7 @@
   "CONFIDENCE_MINIMUM": 80,
   "LIMIT_DETAILS": 100,
   "MAX_AGE_IN_DAYS": 1,
-  "ACTIVE_COLLECTORS": "abuseipdb,otx,urlhaus,threatfox,misp,shodan,censys,virustotal,greynoise,hybridanalysis,gsb,ransomware,malspam",
+  "ACTIVE_COLLECTORS": "abuseipdb,otx,urlhaus",
   "GENERATE_REQUIREMENTS": true,
   "API_KEYS": {
     "ABUSEIPDB": "",
