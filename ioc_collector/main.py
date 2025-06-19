@@ -18,6 +18,7 @@ from ioc_collector.utils.utils import (
     load_config,
     save_daily_iocs,
 )
+from ioc_collector.report import save_correlation_reports
 from ioc_collector.alerts_manager import (
     update_alerts,
     check_duplicates,
@@ -114,6 +115,16 @@ def run_collectors(config: dict, selected: list | None = None) -> None:
     dups = check_duplicates(ALERTS_FILE)
     if dups:
         logging.warning("Valores duplicados em alerts.json: %s", ", ".join(dups))
+
+    try:
+        print("Gerando relatório consolidado...")
+        save_correlation_reports(
+            all_iocs,
+            Path("ioc_correlation_report.csv"),
+            Path("ioc_correlation_report.xlsx"),
+        )
+    except Exception:
+        logging.exception("Erro ao gerar relatório consolidado")
 
     if config.get("GENERATE_REQUIREMENTS", True):
         generate_requirements(Path(__file__).with_name("requirements.txt"))

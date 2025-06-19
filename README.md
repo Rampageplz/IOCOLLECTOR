@@ -60,6 +60,10 @@ chamadas/dia). Ao ultrapassar esse valor o serviço retorna HTTP 429.
    python -m ioc_collector.main
    ```
 
+   Após a coleta um relatório consolidado é salvo automaticamente nos arquivos
+   `ioc_correlation_report.csv` e `ioc_correlation_report.xlsx` contendo a
+   correlação dos IOCs entre os feeds.
+
 5. Para exibir os IPs mais reportados em determinada data:
 
    ```bash
@@ -100,8 +104,9 @@ Os logs sao gravados em `logs/` e tambem exibidos coloridos no terminal utilizan
 
 ## Relatórios e correlação
 
-Para resumir os IOCs coletados em um determinado dia e verificar valores
-repetidos entre os feeds, utilize o módulo `ioc_collector.report`:
+Após cada execução do coletor principal é gerado automaticamente um relatório
+com a correlação dos IOCs encontrados nas diferentes fontes. Para consultas
+manuais ou filtros adicionais continue utilizando o módulo `ioc_collector.report`:
 
 ```bash
 python -m ioc_collector.report --date AAAA-MM-DD --output-json relatorio.json

@@ -16,6 +16,7 @@ from fpdf import FPDF
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
 import xlwt
+import pandas as pd
 
 from rich.console import Console
 from rich.table import Table
@@ -50,8 +51,34 @@ def _filter_alerts(
             continue
         if value and a.get("ioc_value") != value:
             continue
-        result.append(a)
+    result.append(a)
     return result
+
+
+def build_correlation_dataframe(iocs: List[Dict[str, any]]):
+    """Return DataFrame with correlation columns based on IOC value."""
+    df = pd.DataFrame(iocs)
+    if df.empty:
+        return df
+
+    grouped = df.groupby("ioc_value")
+    sources = grouped["source"].apply(lambda x: sorted(set(x))).reset_index(name="sources")
+    unique = grouped.first().reset_index()
+    merged = unique.merge(sources, on="ioc_value")
+    merged["source_count"] = merged["sources"].apply(len)
+    merged["risk_score"] = merged["source_count"] * 10
+    return merged.drop(columns=["source"], errors="ignore")
+
+
+def save_correlation_reports(iocs: List[Dict[str, any]], csv_path: Path, xlsx_path: Path) -> None:
+    """Save correlation report to CSV and Excel."""
+    df = build_correlation_dataframe(iocs)
+    if df.empty:
+        logging.info("Nenhum dado para o relatorio de correlacao")
+        return
+    df.to_csv(csv_path, index=False)
+    df.to_excel(xlsx_path, index=False)
+    logging.info("Relatorio de correlacao salvo em %s e %s", csv_path.resolve(), xlsx_path.resolve())
 
 
 def generate_report(
