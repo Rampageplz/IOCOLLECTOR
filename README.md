@@ -62,7 +62,9 @@ chamadas/dia). Ao ultrapassar esse valor o serviço retorna HTTP 429.
 
    Após a coleta um relatório consolidado é salvo automaticamente nos arquivos
    `ioc_correlation_report.csv` e `ioc_correlation_report.xlsx` contendo a
-   correlação dos IOCs entre os feeds.
+   correlação dos IOCs entre os feeds. O arquivo Excel organiza os indicadores
+   em abas separadas (`IPs`, `URLs`, `Hashes` e `Domínios`) com informações
+   adicionais de país, ASN e pontuações de risco.
 
 5. Para exibir os IPs mais reportados em determinada data:
 
