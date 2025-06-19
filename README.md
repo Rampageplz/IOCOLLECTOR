@@ -17,6 +17,8 @@ Este projeto realiza a coleta diária de indicadores de comprometimento (IOCs) d
 - `ioc_collector/collectors/collector_gsb.py` - Google Safe Browsing
 - `ioc_collector/collectors/collector_ransomware.py` - Feed de ransomware
 - `ioc_collector/collectors/collector_malspam.py` - Feed de malspam
+**Observação:** os coletores ThreatFox, MISP, Shodan, Censys, VirusTotal, GreyNoise, Hybrid Analysis e Google Safe Browsing são implementações simplificadas apenas como _placeholders_. Eles ilustram a integração com essas APIs, mas podem exigir ajustes e chaves válidas. Os demais coletores continuam funcionais.
+
 - `ioc_collector/alerts_manager.py` - gerencia o arquivo `alerts.json`
 - `ioc_collector/utils/utils.py` - utilidades diversas
 - `ioc_collector/main.py` - ponto de entrada da aplicação
