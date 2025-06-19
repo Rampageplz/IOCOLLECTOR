@@ -19,6 +19,7 @@ from ioc_collector.utils.utils import (
     save_daily_iocs,
 )
 from ioc_collector.report import save_correlation_reports
+from ioc_collector.database import insert_iocs, filter_existing_iocs
 from ioc_collector.alerts_manager import (
     update_alerts,
     check_duplicates,
@@ -89,6 +90,7 @@ def run_collectors(config: dict, selected: list | None = None) -> None:
         logging.info("%s IOCs coletados de %s", len(iocs), name)
         folder = DATA_ROOT / name
         dicts = [ioc.to_dict() for ioc in iocs]
+        dicts = filter_existing_iocs(dicts)
         save_daily_iocs(dicts, folder)
         if dicts:
             preview = json.dumps(dicts[:2], indent=4, ensure_ascii=False)
@@ -112,12 +114,15 @@ def run_collectors(config: dict, selected: list | None = None) -> None:
     else:
         logging.info("alerts.json está atualizado. Nenhum novo IOC.")
 
+    inserted = insert_iocs(all_iocs)
+    logging.info("%s IOCs gravados no banco", inserted)
+
     dups = check_duplicates(ALERTS_FILE)
     if dups:
         logging.warning("Valores duplicados em alerts.json: %s", ", ".join(dups))
 
     try:
-        print("Gerando relatório consolidado...")
+        logging.info("Gerando relatório consolidado em Excel")
         save_correlation_reports(
             all_iocs,
             Path("ioc_correlation_report.csv"),

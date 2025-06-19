@@ -61,8 +61,10 @@ chamadas/dia). Ao ultrapassar esse valor o serviço retorna HTTP 429.
    ```
 
    Após a coleta um relatório consolidado é salvo automaticamente nos arquivos
-   `ioc_correlation_report.csv` e `ioc_correlation_report.xlsx` contendo a
-   correlação dos IOCs entre os feeds.
+  `ioc_correlation_report.csv` e `ioc_correlation_report.xlsx` contendo a
+  correlação dos IOCs entre os feeds. O arquivo Excel organiza os indicadores
+  em abas separadas (`IPs`, `URLs`, `Hashes` e `Domínios`) com informações
+  adicionais de país, ASN, data e pontuações de risco.
 
 5. Para exibir os IPs mais reportados em determinada data:
 
@@ -101,6 +103,12 @@ Para testes locais sem acessar a API, informe `ABUSE_MOCK_FILE` apontando para u
 ## Debug
 
 Os logs sao gravados em `logs/` e tambem exibidos coloridos no terminal utilizando `rich`. Para aumentar a verbosidade, altere o nivel em `setup_logging()` para `DEBUG`.
+
+### Banco de dados
+
+Todos os indicadores coletados são armazenados em `data/iocs.sqlite` para evitar
+duplicidades em execuções futuras. O banco é populado automaticamente durante a
+coleta e impede inserções repetidas pelo valor e tipo do IOC.
 
 ## Relatórios e correlação
 
