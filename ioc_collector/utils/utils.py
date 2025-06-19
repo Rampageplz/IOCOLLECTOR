@@ -57,9 +57,21 @@ def load_config() -> dict:
             "CONFIDENCE_MINIMUM": 80,
             "LIMIT_DETAILS": 100,
             "MAX_AGE_IN_DAYS": 1,
-            "ACTIVE_COLLECTORS": "abuseipdb,otx,urlhaus",
+            "ACTIVE_COLLECTORS": "abuseipdb,otx,urlhaus,threatfox,misp,shodan,censys,virustotal,greynoise,hybridanalysis,gsb,ransomware,malspam",
             "GENERATE_REQUIREMENTS": True,
-            "API_KEYS": {"ABUSEIPDB": "", "OTX": "", "URLHAUS": ""},
+            "API_KEYS": {
+                "ABUSEIPDB": "",
+                "OTX": "",
+                "URLHAUS": "",
+                "THREATFOX": "",
+                "MISP": "",
+                "SHODAN": "",
+                "CENSYS": "",
+                "VIRUSTOTAL": "",
+                "GREYNOISE": "",
+                "HYBRIDANALYSIS": "",
+                "GOOGLE_SB": "",
+            },
         }
         config_path.write_text(json.dumps(data, indent=2))
         logging.warning("Arquivo config.json n\u00e3o encontrado. Template criado em %s", config_path)
@@ -72,6 +84,14 @@ def load_config() -> dict:
         "ABUSEIPDB": os.getenv("ABUSEIPDB_API_KEY"),
         "OTX": os.getenv("OTX_API_KEY"),
         "URLHAUS": os.getenv("URLHAUS_API_KEY"),
+        "THREATFOX": os.getenv("THREATFOX_API_KEY"),
+        "MISP": os.getenv("MISP_API_KEY"),
+        "SHODAN": os.getenv("SHODAN_API_KEY"),
+        "CENSYS": os.getenv("CENSYS_API_KEY"),
+        "VIRUSTOTAL": os.getenv("VT_API_KEY"),
+        "GREYNOISE": os.getenv("GREYNOISE_API_KEY"),
+        "HYBRIDANALYSIS": os.getenv("HYBRID_API_KEY"),
+        "GOOGLE_SB": os.getenv("GSB_API_KEY"),
     }
     for k, env_val in env_keys.items():
         if not keys.get(k) and env_val:

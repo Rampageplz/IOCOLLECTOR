@@ -2,11 +2,19 @@
   "CONFIDENCE_MINIMUM": 80,
   "LIMIT_DETAILS": 100,
   "MAX_AGE_IN_DAYS": 1,
-  "ACTIVE_COLLECTORS": "abuseipdb,otx,urlhaus",
+  "ACTIVE_COLLECTORS": "abuseipdb,otx,urlhaus,threatfox,misp,shodan,censys,virustotal,greynoise,hybridanalysis,gsb,ransomware,malspam",
   "GENERATE_REQUIREMENTS": true,
   "API_KEYS": {
     "ABUSEIPDB": "2bdd3b1085ebfb0442ea3a30a1bb3e91318e60c52fcd2c10ce9d2fb69f80d1fcaa8afb5658c5a203",
     "OTX": "a7a130767a8d7f9396430edcf032a1bb8f5c033392e32b95f3d0d543e04880ff",
-    "URLHAUS": ""
+    "URLHAUS": "",
+    "THREATFOX": "",
+    "MISP": "",
+    "SHODAN": "",
+    "CENSYS": "",
+    "VIRUSTOTAL": "",
+    "GREYNOISE": "",
+    "HYBRIDANALYSIS": "",
+    "GOOGLE_SB": ""
   }
 }

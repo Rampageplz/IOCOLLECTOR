@@ -1,15 +1,26 @@
 # IOC Collector
 
-Este projeto realiza a coleta diária de indicadores de comprometimento (IOCs) de diferentes feeds de Threat Intelligence. Atualmente são suportados [AbuseIPDB](https://www.abuseipdb.com/), [AlienVault OTX](https://otx.alienvault.com/) e [URLHaus](https://urlhaus.abuse.ch/).
+Este projeto realiza a coleta diária de indicadores de comprometimento (IOCs) de diferentes feeds de Threat Intelligence. Os coletores incluem [AbuseIPDB](https://www.abuseipdb.com/), [AlienVault OTX](https://otx.alienvault.com/), [URLHaus](https://urlhaus.abuse.ch/) e integrações extras como ThreatFox, MISP, Shodan, Censys, VirusTotal, GreyNoise, Hybrid Analysis, Google Safe Browsing e feeds adicionais do abuse.ch.
 
 ## Estrutura
 
 - `ioc_collector/collectors/collector_abuse.py` - funções para a API do AbuseIPDB
 - `ioc_collector/collectors/collector_otx.py` - coletor do AlienVault OTX
 - `ioc_collector/collectors/collector_urlhaus.py` - coletor do URLHaus
+- `ioc_collector/collectors/collector_threatfox.py` - ThreatFox
+- `ioc_collector/collectors/collector_misp.py` - MISP
+- `ioc_collector/collectors/collector_shodan.py` - Shodan
+- `ioc_collector/collectors/collector_censys.py` - Censys
+- `ioc_collector/collectors/collector_virustotal.py` - VirusTotal
+- `ioc_collector/collectors/collector_greynoise.py` - GreyNoise
+- `ioc_collector/collectors/collector_hybridanalysis.py` - Hybrid Analysis
+- `ioc_collector/collectors/collector_gsb.py` - Google Safe Browsing
+- `ioc_collector/collectors/collector_ransomware.py` - Feed de ransomware
+- `ioc_collector/collectors/collector_malspam.py` - Feed de malspam
 - `ioc_collector/alerts_manager.py` - gerencia o arquivo `alerts.json`
 - `ioc_collector/utils/utils.py` - utilidades diversas
 - `ioc_collector/main.py` - ponto de entrada da aplicação
+- `ioc.db` - banco SQLite com todos os IOCs coletados (evita duplicados)
 - `data/{source}/` - arquivos diários de cada feed
 - `logs/` - arquivos de log nos formatos `YYYY-MM-DD.log` e `YYYY-MM-DD.json`
 - cada IOC inclui o campo `time` com data e hora em UTC no formato
@@ -62,9 +73,9 @@ chamadas/dia). Ao ultrapassar esse valor o serviço retorna HTTP 429.
 
    Após a coleta um relatório consolidado é salvo automaticamente nos arquivos
    `ioc_correlation_report.csv` e `ioc_correlation_report.xlsx` contendo a
-   correlação dos IOCs entre os feeds. O arquivo Excel organiza os indicadores
-   em abas separadas (`IPs`, `URLs`, `Hashes` e `Domínios`) com informações
-   adicionais de país, ASN e pontuações de risco.
+  correlação dos IOCs entre os feeds. O arquivo Excel organiza os indicadores
+  em abas separadas (`IPs`, `URLs`, `Hashes` e `Domínios`) com informações
+  adicionais de país, ASN, data de publicação e pontuações de risco.
 
 5. Para exibir os IPs mais reportados em determinada data:
 
