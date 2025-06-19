@@ -114,6 +114,7 @@ def _prepare_ip_df(df: pd.DataFrame) -> pd.DataFrame:
                 "Fontes",
                 "País",
                 "ASN",
+                "Data",
                 "Quantidade de Fontes",
                 "Score de Risco",
                 "Mitigação recomendada",
@@ -127,6 +128,7 @@ def _prepare_ip_df(df: pd.DataFrame) -> pd.DataFrame:
         asns.append(asn)
     df = df.copy()
     df["Fontes"] = df["sources"].apply(lambda s: ", ".join(s))
+    df["Data"] = df["date"]
     df["País"] = countries
     df["ASN"] = asns
     df["Quantidade de Fontes"] = df["source_count"]
@@ -139,6 +141,7 @@ def _prepare_ip_df(df: pd.DataFrame) -> pd.DataFrame:
             "Fontes",
             "País",
             "ASN",
+            "Data",
             "Quantidade de Fontes",
             "Score de Risco",
             "Mitigação recomendada",
@@ -153,6 +156,7 @@ def _prepare_url_df(df: pd.DataFrame) -> pd.DataFrame:
                 "URL",
                 "Fontes",
                 "Descrição da ameaça",
+                "Data",
                 "Quantidade de Fontes",
                 "Score de Risco",
                 "Mitigação recomendada",
@@ -160,6 +164,7 @@ def _prepare_url_df(df: pd.DataFrame) -> pd.DataFrame:
         )
     df = df.copy()
     df["Fontes"] = df["sources"].apply(lambda s: ", ".join(s))
+    df["Data"] = df["date"]
     df["Quantidade de Fontes"] = df["source_count"]
     df["Score de Risco"] = df["risk_score"]
     df["Mitigação recomendada"] = df["source_count"].apply(_mitigation_url)
@@ -169,6 +174,7 @@ def _prepare_url_df(df: pd.DataFrame) -> pd.DataFrame:
             "URL",
             "Fontes",
             "Descrição da ameaça",
+            "Data",
             "Quantidade de Fontes",
             "Score de Risco",
             "Mitigação recomendada",
@@ -183,6 +189,7 @@ def _prepare_hash_df(df: pd.DataFrame) -> pd.DataFrame:
                 "Hash",
                 "Tipo do hash",
                 "Fontes",
+                "Data",
                 "Quantidade de Fontes",
                 "Score de Risco",
                 "Mitigação recomendada",
@@ -190,6 +197,7 @@ def _prepare_hash_df(df: pd.DataFrame) -> pd.DataFrame:
         )
     df = df.copy()
     df["Fontes"] = df["sources"].apply(lambda s: ", ".join(s))
+    df["Data"] = df["date"]
     df["Quantidade de Fontes"] = df["source_count"]
     df["Score de Risco"] = df["risk_score"]
     df["Mitigação recomendada"] = df["source_count"].apply(_mitigation_hash)
@@ -199,6 +207,7 @@ def _prepare_hash_df(df: pd.DataFrame) -> pd.DataFrame:
             "Hash",
             "Tipo do hash",
             "Fontes",
+            "Data",
             "Quantidade de Fontes",
             "Score de Risco",
             "Mitigação recomendada",
@@ -213,6 +222,7 @@ def _prepare_domain_df(df: pd.DataFrame) -> pd.DataFrame:
                 "Domínio",
                 "Fontes",
                 "Categoria da ameaça",
+                "Data",
                 "Quantidade de Fontes",
                 "Score de Risco",
                 "Mitigação recomendada",
@@ -220,6 +230,7 @@ def _prepare_domain_df(df: pd.DataFrame) -> pd.DataFrame:
         )
     df = df.copy()
     df["Fontes"] = df["sources"].apply(lambda s: ", ".join(s))
+    df["Data"] = df["date"]
     df["Quantidade de Fontes"] = df["source_count"]
     df["Score de Risco"] = df["risk_score"]
     df["Mitigação recomendada"] = df["source_count"].apply(_mitigation_domain)
@@ -229,6 +240,7 @@ def _prepare_domain_df(df: pd.DataFrame) -> pd.DataFrame:
             "Domínio",
             "Fontes",
             "Categoria da ameaça",
+            "Data",
             "Quantidade de Fontes",
             "Score de Risco",
             "Mitigação recomendada",

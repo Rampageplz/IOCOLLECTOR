@@ -13,6 +13,16 @@ from pythonjsonlogger import jsonlogger
 from ioc_collector.collectors.collector_abuse import collect_abuse
 from ioc_collector.collectors.collector_otx import collect_otx
 from ioc_collector.collectors.collector_urlhaus import collect_urlhaus
+from ioc_collector.collectors.collector_threatfox import collect_threatfox
+from ioc_collector.collectors.collector_misp import collect_misp
+from ioc_collector.collectors.collector_shodan import collect_shodan
+from ioc_collector.collectors.collector_censys import collect_censys
+from ioc_collector.collectors.collector_virustotal import collect_virustotal
+from ioc_collector.collectors.collector_greynoise import collect_greynoise
+from ioc_collector.collectors.collector_hybridanalysis import collect_hybridanalysis
+from ioc_collector.collectors.collector_gsb import collect_gsb
+from ioc_collector.collectors.collector_ransomware import collect_ransomware
+from ioc_collector.collectors.collector_malspam import collect_malspam
 from ioc_collector.utils.utils import (
     generate_requirements,
     load_config,
@@ -24,11 +34,28 @@ from ioc_collector.alerts_manager import (
     check_duplicates,
     print_top_reported,
 )
+from ioc_collector.db_manager import insert_iocs
 
 
 LOG_DIR = Path(__file__).resolve().parent.parent / "logs"
 DATA_ROOT = Path(__file__).resolve().parent.parent / "data"
 ALERTS_FILE = Path(__file__).resolve().parent / "alerts.json"
+DB_PATH = Path(__file__).resolve().parent.parent / "ioc.db"
+COLLECTOR_NAMES = [
+    "abuseipdb",
+    "otx",
+    "urlhaus",
+    "threatfox",
+    "misp",
+    "shodan",
+    "censys",
+    "virustotal",
+    "greynoise",
+    "hybridanalysis",
+    "gsb",
+    "ransomware",
+    "malspam",
+]
 
 
 def show_banner() -> None:
@@ -82,6 +109,26 @@ def run_collectors(config: dict, selected: list | None = None) -> None:
             iocs = collect_otx(api)
         elif name == "urlhaus":
             iocs = collect_urlhaus()
+        elif name == "threatfox":
+            iocs = collect_threatfox()
+        elif name == "misp":
+            iocs = collect_misp(keys.get("MISP"))
+        elif name == "shodan":
+            iocs = collect_shodan(keys.get("SHODAN"))
+        elif name == "censys":
+            iocs = collect_censys(keys.get("CENSYS"))
+        elif name == "virustotal":
+            iocs = collect_virustotal(keys.get("VIRUSTOTAL"))
+        elif name == "greynoise":
+            iocs = collect_greynoise(keys.get("GREYNOISE"))
+        elif name == "hybridanalysis":
+            iocs = collect_hybridanalysis(keys.get("HYBRIDANALYSIS"))
+        elif name == "gsb":
+            iocs = collect_gsb(keys.get("GOOGLE_SB"))
+        elif name == "ransomware":
+            iocs = collect_ransomware()
+        elif name == "malspam":
+            iocs = collect_malspam()
         else:
             logging.warning("Coletor desconhecido: %s", name)
             continue
@@ -111,6 +158,9 @@ def run_collectors(config: dict, selected: list | None = None) -> None:
         logging.info("Novos IOCs adicionados: %s", added)
     else:
         logging.info("alerts.json está atualizado. Nenhum novo IOC.")
+
+    inserted = insert_iocs(all_iocs, DB_PATH)
+    logging.info("%s IOCs inseridos no banco", inserted)
 
     dups = check_duplicates(ALERTS_FILE)
     if dups:
@@ -169,17 +219,19 @@ def main() -> None:
     table.add_column("Coletor")
     table.add_column("Ativo")
     table.add_column("API Key")
-    for coll in ["abuseipdb", "otx", "urlhaus"]:
+    for coll in COLLECTOR_NAMES:
         active = "Sim" if coll in config.get("ACTIVE_COLLECTORS", []) else "Não"
         key_present = "Sim" if keys.get(coll.upper()) else "Não"
         table.add_row(coll, active, key_present)
     console.print(table)
 
     missing = []
-    if "abuseipdb" in config.get("ACTIVE_COLLECTORS", []) and not (keys.get("ABUSEIPDB") or os.getenv("ABUSE_MOCK_FILE")):
-        missing.append("ABUSEIPDB")
-    if "otx" in config.get("ACTIVE_COLLECTORS", []) and not keys.get("OTX"):
-        missing.append("OTX")
+    for coll in config.get("ACTIVE_COLLECTORS", []):
+        if coll == "abuseipdb" and os.getenv("ABUSE_MOCK_FILE"):
+            continue
+        key_name = coll.upper()
+        if key_name in keys and not keys.get(key_name):
+            missing.append(key_name)
     if missing:
         msg = "API Keys ausentes: " + ", ".join(missing)
         logging.error(msg)
