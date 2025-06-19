@@ -62,7 +62,9 @@ chamadas/dia). Ao ultrapassar esse valor o serviço retorna HTTP 429.
 
    Após a coleta um relatório consolidado é salvo automaticamente nos arquivos
    `ioc_correlation_report.csv` e `ioc_correlation_report.xlsx` contendo a
-   correlação dos IOCs entre os feeds.
+   correlação dos IOCs entre os feeds. O arquivo Excel possui abas separadas
+   (IPs, URLs, Hashes e Domínios) com detalhes adicionais como país, ASN e
+   recomendações de mitigação.
 
 5. Para exibir os IPs mais reportados em determinada data:
 
@@ -105,7 +107,8 @@ Os logs sao gravados em `logs/` e tambem exibidos coloridos no terminal utilizan
 ## Relatórios e correlação
 
 Após cada execução do coletor principal é gerado automaticamente um relatório
-com a correlação dos IOCs encontrados nas diferentes fontes. Para consultas
+com a correlação dos IOCs encontrados nas diferentes fontes. O Excel gerado já
+contém abas específicas para IPs, URLs, hashes e domínios. Para consultas
 manuais ou filtros adicionais continue utilizando o módulo `ioc_collector.report`:
 
 ```bash

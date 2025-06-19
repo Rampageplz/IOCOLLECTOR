@@ -17,6 +17,7 @@ from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
 import xlwt
 import pandas as pd
+import requests
 
 from rich.console import Console
 from rich.table import Table
@@ -70,6 +71,101 @@ def build_correlation_dataframe(iocs: List[Dict[str, any]]):
     return merged.drop(columns=["source"], errors="ignore")
 
 
+_ip_cache: Dict[str, Dict[str, str]] = {}
+
+
+def _fetch_ip_info(ip: str) -> Dict[str, str]:
+    """Return country and ASN information for an IP using ip-api.com."""
+    if ip in _ip_cache:
+        return _ip_cache[ip]
+
+    try:
+        resp = requests.get(f"http://ip-api.com/json/{ip}", timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
+    except Exception:
+        logging.exception("Falha ao consultar ip-api para %s", ip)
+        data = {}
+
+    info = {"country": data.get("country", ""), "asn": data.get("as", "")}
+    _ip_cache[ip] = info
+    return info
+
+
+def _mitigation_ip(count: int) -> str:
+    if count >= 3:
+        return "Bloqueio imediato"
+    if count == 2:
+        return "Monitorar e bloquear se necessário"
+    return "Monitorar"
+
+
+def _mitigation_url(_: int) -> str:
+    return "Bloquear URL no proxy/firewall"
+
+
+def _mitigation_hash(_: int) -> str:
+    return "Isolar arquivo e analisar em sandbox"
+
+
+def _mitigation_domain(_: int) -> str:
+    return "Bloquear domínio e monitorar DNS"
+
+
+def _save_detailed_excel(df: pd.DataFrame, path: Path) -> None:
+    """Create Excel with separate sheets by IOC type."""
+    logging.info("Salvando relatorio detalhado em %s", path)
+    with pd.ExcelWriter(path, engine="openpyxl") as writer:
+        # IPs
+        ip_df = df[df["ioc_type"].str.upper() == "IP"].copy()
+        if not ip_df.empty:
+            logging.info("Adicionando aba de IPs (%s entradas)", len(ip_df))
+            ip_df["Fontes"] = ip_df["sources"].apply(lambda s: ", ".join(s))
+            ip_df["País"] = ip_df["ioc_value"].apply(lambda ip: _fetch_ip_info(ip)["country"])
+            ip_df["ASN"] = ip_df["ioc_value"].apply(lambda ip: _fetch_ip_info(ip)["asn"])
+            ip_df["Mitigação recomendada"] = ip_df["source_count"].apply(_mitigation_ip)
+            cols = ["ioc_value", "Fontes", "País", "ASN", "source_count", "risk_score", "Mitigação recomendada"]
+            ip_df = ip_df[cols]
+            ip_df.columns = ["IP", "Fontes", "País", "ASN", "Quantidade de Fontes", "Score de Risco", "Mitigação recomendada"]
+            ip_df.to_excel(writer, sheet_name="IPs", index=False)
+
+        # URLs
+        url_df = df[df["ioc_type"].str.upper() == "URL"].copy()
+        if not url_df.empty:
+            logging.info("Adicionando aba de URLs (%s entradas)", len(url_df))
+            url_df["Fontes"] = url_df["sources"].apply(lambda s: ", ".join(s))
+            url_df["Descrição da ameaça"] = url_df.get("description", "")
+            url_df["Mitigação recomendada"] = url_df["source_count"].apply(_mitigation_url)
+            cols = ["ioc_value", "Fontes", "Descrição da ameaça", "source_count", "risk_score", "Mitigação recomendada"]
+            url_df = url_df[cols]
+            url_df.columns = ["URL", "Fontes", "Descrição da ameaça", "Quantidade de Fontes", "Score de Risco", "Mitigação recomendada"]
+            url_df.to_excel(writer, sheet_name="URLs", index=False)
+
+        # Hashes
+        hash_df = df[df["ioc_type"].str.contains("HASH", case=False, na=False) | df["ioc_type"].str.contains("MD5", case=False, na=False) | df["ioc_type"].str.contains("SHA", case=False, na=False)].copy()
+        if not hash_df.empty:
+            logging.info("Adicionando aba de Hashes (%s entradas)", len(hash_df))
+            hash_df["Fontes"] = hash_df["sources"].apply(lambda s: ", ".join(s))
+            hash_df["Mitigação recomendada"] = hash_df["source_count"].apply(_mitigation_hash)
+            cols = ["ioc_value", "ioc_type", "Fontes", "source_count", "risk_score", "Mitigação recomendada"]
+            hash_df = hash_df[cols]
+            hash_df.columns = ["Hash", "Tipo", "Fontes", "Quantidade de Fontes", "Score de Risco", "Mitigação recomendada"]
+            hash_df.to_excel(writer, sheet_name="Hashes", index=False)
+
+        # Domains
+        dom_df = df[df["ioc_type"].str.upper() == "DOMAIN"].copy()
+        if not dom_df.empty:
+            logging.info("Adicionando aba de Domínios (%s entradas)", len(dom_df))
+            dom_df["Fontes"] = dom_df["sources"].apply(lambda s: ", ".join(s))
+            dom_df["Categoria da ameaça"] = dom_df.get("description", "")
+            dom_df["Mitigação recomendada"] = dom_df["source_count"].apply(_mitigation_domain)
+            cols = ["ioc_value", "Fontes", "Categoria da ameaça", "source_count", "risk_score", "Mitigação recomendada"]
+            dom_df = dom_df[cols]
+            dom_df.columns = ["Domínio", "Fontes", "Categoria da ameaça", "Quantidade de Fontes", "Score de Risco", "Mitigação recomendada"]
+            dom_df.to_excel(writer, sheet_name="Domínios", index=False)
+
+
+
 def save_correlation_reports(iocs: List[Dict[str, any]], csv_path: Path, xlsx_path: Path) -> None:
     """Save correlation report to CSV and Excel."""
     df = build_correlation_dataframe(iocs)
@@ -77,8 +173,12 @@ def save_correlation_reports(iocs: List[Dict[str, any]], csv_path: Path, xlsx_pa
         logging.info("Nenhum dado para o relatorio de correlacao")
         return
     df.to_csv(csv_path, index=False)
-    df.to_excel(xlsx_path, index=False)
-    logging.info("Relatorio de correlacao salvo em %s e %s", csv_path.resolve(), xlsx_path.resolve())
+    _save_detailed_excel(df, xlsx_path)
+    logging.info(
+        "Relatorio de correlacao salvo em %s e %s",
+        csv_path.resolve(),
+        xlsx_path.resolve(),
+    )
 
 
 def generate_report(
