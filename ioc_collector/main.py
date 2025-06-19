@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 
 from rich.logging import RichHandler
+from rich.console import Console
 from pythonjsonlogger import jsonlogger
 
 from ioc_collector.collectors.collector_abuse import collect_abuse
@@ -59,17 +60,20 @@ COLLECTOR_NAMES = [
 
 
 def show_banner() -> None:
-    """Exibe informações iniciais e coleta chaves de API se necessário."""
-    banner = (
-        "\n" +
-        "########################\n" +
-        "#        Inteltool       #\n" +
-        "#  O que é: coleta de   #\n" +
-        "#  IOCs de múltiplos    #\n" +
-        "#  feeds.               #\n" +
-        "########################\n"
-    )
-    print(banner)
+    """Exibe um cabeçalho e tutorial de uso."""
+    console = Console()
+    lines = [
+        "########################",
+        "#     IOC Collector    #",
+        "########################",
+        "",
+        "Como usar:",
+        "1. Instale as dependências: pip install -r ioc_collector/requirements.txt",
+        "2. Ajuste as API keys em config.json (quando necessário)",
+        "3. Execute: python -m ioc_collector.main",
+    ]
+    for line in lines:
+        console.print(line, style="green", justify="center")
 
 
 def setup_logging(level: int = logging.INFO) -> None:
@@ -211,7 +215,6 @@ def main() -> None:
 
     keys = config.get("API_KEYS", {})
 
-    from rich.console import Console
     from rich.table import Table
 
     console = Console()
@@ -226,11 +229,24 @@ def main() -> None:
     console.print(table)
 
     missing = []
+    requires_key = {
+        "abuseipdb",
+        "otx",
+        "misp",
+        "shodan",
+        "censys",
+        "virustotal",
+        "greynoise",
+        "hybridanalysis",
+        "gsb",
+    }
     for coll in config.get("ACTIVE_COLLECTORS", []):
         if coll == "abuseipdb" and os.getenv("ABUSE_MOCK_FILE"):
             continue
+        if coll not in requires_key:
+            continue
         key_name = coll.upper()
-        if key_name in keys and not keys.get(key_name):
+        if not keys.get(key_name):
             missing.append(key_name)
     if missing:
         msg = "API Keys ausentes: " + ", ".join(missing)
