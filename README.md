@@ -1,6 +1,6 @@
 # IOC Collector
 
-Este projeto realiza a coleta diária de indicadores de comprometimento (IOCs) de diferentes feeds de Threat Intelligence. Os coletores incluem [AbuseIPDB](https://www.abuseipdb.com/), [AlienVault OTX](https://otx.alienvault.com/), [URLHaus](https://urlhaus.abuse.ch/) e integrações extras como ThreatFox, MISP, Shodan, Censys, VirusTotal, GreyNoise, Hybrid Analysis, Google Safe Browsing e feeds adicionais do abuse.ch.
+Este projeto realiza a coleta diaria de indicadores de comprometimento (IOCs) a partir de diferentes feeds de Threat Intelligence. No momento apenas os coletores do [AbuseIPDB](https://www.abuseipdb.com/), [AlienVault OTX](https://otx.alienvault.com/) e [URLHaus](https://urlhaus.abuse.ch/) estao funcionais. As demais integracoes (ThreatFox, MISP, Shodan, Censys, VirusTotal, GreyNoise, Hybrid Analysis, Google Safe Browsing e feeds adicionais do abuse.ch) sao apenas placeholders para futura implementacao, que depende de APIs pagas e testes.
 
 ## Estrutura
 
@@ -25,6 +25,7 @@ Este projeto realiza a coleta diária de indicadores de comprometimento (IOCs) d
 - `logs/` - arquivos de log nos formatos `YYYY-MM-DD.log` e `YYYY-MM-DD.json`
 - cada IOC inclui o campo `time` com data e hora em UTC no formato
   `YYYY-MM-DDTHH:MM:SSZ`
+Observacao: exceto pelos coletores do AbuseIPDB, OTX e URLHaus, os demais modulos listados acima sao apenas esbocos e ainda nao coletam dados. Eles serao habilitados futuramente conforme as APIs pagas necessarias sejam adquiridas e testadas.
 
 ## Uso
 
