@@ -117,7 +117,7 @@ def run_collectors(config: dict, selected: list | None = None) -> None:
         logging.warning("Valores duplicados em alerts.json: %s", ", ".join(dups))
 
     try:
-        print("Gerando relatório consolidado...")
+        logging.info("Gerando relatório consolidado em Excel")
         save_correlation_reports(
             all_iocs,
             Path("ioc_correlation_report.csv"),
